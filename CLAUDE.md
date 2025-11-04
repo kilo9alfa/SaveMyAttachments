@@ -12,16 +12,22 @@ A Google Workspace Add-on that automatically processes incoming emails, saves at
 ### Core Functionality
 
 1. **Email Monitoring** - Automatically detects new emails based on user-defined filters
-2. **Attachment Management** - Extracts and saves attachments to specified Google Drive folder
-3. **AI Summarization** - Generates concise email summaries using OpenRouter.ai (200+ model choices)
-4. **Spreadsheet Logging** - Creates organized rows in Google Sheets with email metadata and links
+2. **Email & Attachment Backup** - Saves complete emails (PDF/HTML/Plain Text) AND attachments to Google Drive
+3. **Smart Organization** - Dynamic folder structures with custom naming templates (organize by date, sender, label, etc.)
+4. **Multiple Rules Engine** - Create unlimited workflows for different email types (invoices, receipts, clients, etc.)
+5. **AI Summarization** - Generates concise email summaries using OpenRouter.ai (200+ model choices)
+6. **Spreadsheet Index** - Creates searchable Google Sheets database with email metadata, summaries, and Drive links
+7. **Advanced Filtering** - File type filters, size limits, sender whitelists/blacklists
 
-### Key Differentiators
+### Key Differentiators vs. Competitors
 
-- **User-controlled AI costs** - Users provide their own OpenRouter API key
-- **Model flexibility** - Access to 200+ models (GPT-4, Claude, Gemini, Llama, etc.)
-- **No subscription AI fees** - Flat pricing model without per-email charges
-- **Privacy-focused** - No email content stored or processed through developer's systems
+- **AI-Powered Intelligence** - Unlike competitors, we provide AI summaries and insights, not just backup
+- **User-controlled AI costs** - Users bring their own OpenRouter API key (no hidden AI fees)
+- **Model flexibility** - Access to 200+ models (GPT-4, Claude, Gemini, Llama, Mistral, etc.)
+- **Searchable Database** - Google Sheets integration creates a queryable index (competitors only save files)
+- **Better Value** - More features at lower price point than market leader ($69-99/year vs $80-100/year)
+- **Privacy-focused** - No email content stored on our servers or processed through our accounts
+- **Shared Drive Support** - Team collaboration features included
 
 ## Technical Architecture
 
@@ -39,12 +45,18 @@ A Google Workspace Add-on that automatically processes incoming emails, saves at
 SaveMe/
 ├── Code.gs                    # Main orchestration & menu setup
 ├── GmailProcessor.gs          # Email fetching, parsing & filtering
-├── DriveManager.gs            # Attachment extraction & Drive upload
+├── DriveManager.gs            # File upload, folder organization & naming
+├── EmailConverter.gs          # Email to PDF/HTML/Plain Text conversion
 ├── SheetsManager.gs           # Spreadsheet row creation & management
+├── RulesEngine.gs             # Multiple workflow rules management
+├── FolderTemplates.gs         # Dynamic folder structure creation
+├── FileNaming.gs              # Custom file naming template engine
+├── FilterManager.gs           # File type, size, sender filtering
 ├── OpenRouterService.gs       # AI API integration & summarization
 ├── SettingsManager.gs         # User configuration storage & retrieval
 ├── TriggerManager.gs          # Automated email checking setup
 ├── Sidebar.html               # User settings configuration UI
+├── RuleBuilder.html           # Visual rule creation interface
 ├── Models.html                # Model selector with pricing info
 ├── Onboarding.html            # First-time setup wizard
 ├── appsscript.json            # Manifest with OAuth scopes
@@ -56,35 +68,80 @@ SaveMe/
 ```
 Gmail Inbox
     ↓
-[Email Filter] → Skip if already processed
+[Apply Rules Engine] → Match email to rule(s)
     ↓
-[Extract Attachments] → Save to Drive folder
+[Email Filter] → Skip if already processed or doesn't match
+    ↓
+[Email Conversion] → Convert to PDF/HTML/Text (optional)
+    ↓
+[Extract Attachments] → Filter by type/size
+    ↓
+[Folder Template] → Build dynamic folder path (e.g., "2024/11/sender@company.com/")
+    ↓
+[File Naming] → Apply custom naming template (e.g., "2024-11-04_Subject_Line.pdf")
+    ↓
+[Save to Drive] → Upload email + attachments to organized folders
     ↓
 [Email Content] → OpenRouter API → [AI Summary]
     ↓
-[Combine Data] → Append row to Google Sheet
+[Combine Data] → Append row to Google Sheet with Drive links
     ↓
-[Mark as Processed] → Update tracking
+[Mark as Processed] → Update tracking & apply label
 ```
 
 ## User Configuration
 
-### Required Settings
+### Required Settings (Per Rule)
 
-1. **OpenRouter API Key** - From openrouter.ai/keys
-2. **AI Model Selection** - Choice of 200+ models
-3. **Google Sheet URL** - Destination spreadsheet
-4. **Drive Folder URL** - Where attachments are saved
-5. **Email Filter** - Gmail search syntax (optional)
-6. **Summary Prompt** - Custom AI instruction template
+1. **Rule Name** - Descriptive name for this workflow (e.g., "Client Invoices", "Receipts")
+2. **Gmail Filter** - Gmail search syntax (e.g., `from:client@company.com has:attachment`, `label:important`)
+3. **OpenRouter API Key** - From openrouter.ai/keys (global setting)
+4. **AI Model Selection** - Choice of 200+ models (can be different per rule)
+5. **Google Sheet URL** - Destination spreadsheet for this rule
+6. **Drive Folder URL** - Base folder where files are saved (can use Shared Drives)
 
-### Optional Settings
+### Save Options (Per Rule)
 
-- Processing schedule (frequency)
-- Column customization for Sheets
-- Attachment file type filters
-- Sender whitelist/blacklist
-- Subject line keywords
+- **Save Email Body** - Yes/No
+  - Format: PDF, HTML, Plain Text, or All
+- **Save Attachments** - Yes/No
+  - File type filters (e.g., only PDFs, only images)
+  - Size limits (min/max MB)
+
+### Organization Settings (Per Rule)
+
+- **Folder Structure Template** - Dynamic path patterns:
+  - `{year}/{month}/{day}` → `2024/11/04/`
+  - `{sender_email}/{year-month}` → `client@company.com/2024-11/`
+  - `{label}/{sender_name}` → `Important/John Smith/`
+  - `{subject_keyword}/` → Auto-extract keywords from subject
+
+- **File Naming Template** - Custom naming patterns:
+  - `{YYYYMMDD}-{subject}.pdf` → `20241104-Invoice #1234.pdf`
+  - `{sender_name}_{YYYY-MM-DD_HHmmss}` → `John Smith_2024-11-04_143022`
+  - `{label}_{subject}_{attachment_name}` → `Receipt_Dinner_receipt.pdf`
+
+### AI & Sheets Settings (Per Rule)
+
+- **Summary Prompt** - Custom AI instruction template
+- **Sheet Column Mapping** - Customize what data goes in which columns
+- **AI Processing** - Enable/disable AI summarization for this rule
+
+### Advanced Filters (Per Rule)
+
+- **Sender Whitelist** - Only process emails from these addresses/domains
+- **Sender Blacklist** - Exclude emails from these addresses/domains
+- **Subject Keywords** - Required words in subject line
+- **Date Range** - Only process emails from specific date range
+- **Attachment Requirements** - Must have/must not have attachments
+- **Min/Max Attachment Count** - e.g., only emails with 1-5 attachments
+
+### Global Settings
+
+- **Processing Schedule** - How often to check for new emails (5, 10, 15, 30 minutes, or hourly)
+- **Concurrent Rules** - Process all matching rules or stop after first match
+- **Error Notifications** - Email me when errors occur
+- **Daily Summary** - Send daily report of processed emails
 
 ## Implementation Details
 
@@ -396,6 +453,303 @@ function markAsProcessed(messageId) {
 }
 ```
 
+### Email Conversion to PDF/HTML
+
+```javascript
+// EmailConverter.gs
+function convertEmailToPDF(message) {
+  var html = buildEmailHTML(message);
+
+  // Create temporary HTML file
+  var tempHtml = HtmlService.createHtmlOutput(html).getContent();
+
+  // Use Google Docs to convert HTML to PDF
+  var blob = Utilities.newBlob(tempHtml, 'text/html', 'temp.html');
+  var file = DriveApp.createFile(blob);
+
+  // Convert to PDF
+  var pdfBlob = file.getAs('application/pdf');
+  pdfBlob.setName(message.getSubject() + '.pdf');
+
+  // Clean up temp file
+  file.setTrashed(true);
+
+  return pdfBlob;
+}
+
+function buildEmailHTML(message) {
+  var html = '<html><head><style>' +
+    'body { font-family: Arial, sans-serif; padding: 20px; }' +
+    '.header { background: #f5f5f5; padding: 15px; margin-bottom: 20px; }' +
+    '.label { font-weight: bold; }' +
+    '</style></head><body>';
+
+  html += '<div class="header">';
+  html += '<div><span class="label">From:</span> ' + message.getFrom() + '</div>';
+  html += '<div><span class="label">Date:</span> ' + message.getDate() + '</div>';
+  html += '<div><span class="label">Subject:</span> ' + message.getSubject() + '</div>';
+  html += '</div>';
+
+  html += '<div class="body">' + message.getBody() + '</div>';
+  html += '</body></html>';
+
+  return html;
+}
+
+function saveEmailAsHTML(message) {
+  var html = buildEmailHTML(message);
+  return Utilities.newBlob(html, 'text/html', message.getSubject() + '.html');
+}
+
+function saveEmailAsPlainText(message) {
+  var text = 'From: ' + message.getFrom() + '\n';
+  text += 'Date: ' + message.getDate() + '\n';
+  text += 'Subject: ' + message.getSubject() + '\n';
+  text += '\n' + message.getPlainBody();
+
+  return Utilities.newBlob(text, 'text/plain', message.getSubject() + '.txt');
+}
+```
+
+### Rules Engine
+
+```javascript
+// RulesEngine.gs
+function getAllRules() {
+  var props = PropertiesService.getUserProperties();
+  var rulesJson = props.getProperty('RULES') || '[]';
+  return JSON.parse(rulesJson);
+}
+
+function saveRule(rule) {
+  var rules = getAllRules();
+
+  // Add or update rule
+  var existingIndex = rules.findIndex(r => r.id === rule.id);
+  if (existingIndex >= 0) {
+    rules[existingIndex] = rule;
+  } else {
+    rule.id = Utilities.getUuid();
+    rules.push(rule);
+  }
+
+  var props = PropertiesService.getUserProperties();
+  props.setProperty('RULES', JSON.stringify(rules));
+  return rule;
+}
+
+function deleteRule(ruleId) {
+  var rules = getAllRules();
+  rules = rules.filter(r => r.id !== ruleId);
+
+  var props = PropertiesService.getUserProperties();
+  props.setProperty('RULES', JSON.stringify(rules));
+}
+
+function matchEmailToRules(message) {
+  var rules = getAllRules();
+  var matchedRules = [];
+
+  rules.forEach(function(rule) {
+    if (emailMatchesRule(message, rule)) {
+      matchedRules.push(rule);
+    }
+  });
+
+  return matchedRules;
+}
+
+function emailMatchesRule(message, rule) {
+  // Check Gmail search filter
+  if (rule.gmailFilter) {
+    var threads = GmailApp.search(rule.gmailFilter + ' rfc822msgid:' + message.getId(), 0, 1);
+    if (threads.length === 0) return false;
+  }
+
+  // Check sender whitelist
+  if (rule.senderWhitelist && rule.senderWhitelist.length > 0) {
+    var from = message.getFrom().toLowerCase();
+    var matches = rule.senderWhitelist.some(sender => from.includes(sender.toLowerCase()));
+    if (!matches) return false;
+  }
+
+  // Check sender blacklist
+  if (rule.senderBlacklist && rule.senderBlacklist.length > 0) {
+    var from = message.getFrom().toLowerCase();
+    var blocked = rule.senderBlacklist.some(sender => from.includes(sender.toLowerCase()));
+    if (blocked) return false;
+  }
+
+  // Check subject keywords
+  if (rule.subjectKeywords && rule.subjectKeywords.length > 0) {
+    var subject = message.getSubject().toLowerCase();
+    var matches = rule.subjectKeywords.some(keyword => subject.includes(keyword.toLowerCase()));
+    if (!matches) return false;
+  }
+
+  // Check attachment requirements
+  if (rule.requireAttachments && message.getAttachments().length === 0) {
+    return false;
+  }
+
+  return true;
+}
+```
+
+### Folder Templates
+
+```javascript
+// FolderTemplates.gs
+function buildFolderPath(template, message) {
+  var path = template;
+
+  // Date variables
+  var date = message.getDate();
+  path = path.replace(/\{year\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy'));
+  path = path.replace(/\{month\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'MM'));
+  path = path.replace(/\{day\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd'));
+  path = path.replace(/\{year-month\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM'));
+
+  // Sender variables
+  var from = message.getFrom();
+  var senderEmail = extractEmail(from);
+  var senderName = extractName(from);
+
+  path = path.replace(/\{sender_email\}/g, sanitizeFolderName(senderEmail));
+  path = path.replace(/\{sender_name\}/g, sanitizeFolderName(senderName));
+
+  // Subject variable
+  var subject = message.getSubject();
+  path = path.replace(/\{subject\}/g, sanitizeFolderName(subject));
+
+  // Label variable (first label)
+  var thread = GmailApp.getMessageById(message.getId()).getThread();
+  var labels = thread.getLabels();
+  if (labels.length > 0) {
+    path = path.replace(/\{label\}/g, sanitizeFolderName(labels[0].getName()));
+  } else {
+    path = path.replace(/\{label\}/g, 'No Label');
+  }
+
+  return path;
+}
+
+function createFolderPath(baseFolderId, folderPath) {
+  var parts = folderPath.split('/').filter(part => part.length > 0);
+  var currentFolder = DriveApp.getFolderById(baseFolderId);
+
+  parts.forEach(function(part) {
+    var folders = currentFolder.getFoldersByName(part);
+    if (folders.hasNext()) {
+      currentFolder = folders.next();
+    } else {
+      currentFolder = currentFolder.createFolder(part);
+    }
+  });
+
+  return currentFolder;
+}
+
+function sanitizeFolderName(name) {
+  // Remove invalid characters for folder names
+  return name.replace(/[\/\\<>:"|?*]/g, '_').substring(0, 100);
+}
+
+function extractEmail(fromString) {
+  var match = fromString.match(/<(.+?)>/);
+  return match ? match[1] : fromString;
+}
+
+function extractName(fromString) {
+  var match = fromString.match(/^(.+?)\s*</);
+  return match ? match[1].trim().replace(/["']/g, '') : fromString;
+}
+```
+
+### File Naming Templates
+
+```javascript
+// FileNaming.gs
+function applyFileNamingTemplate(template, message, originalFileName) {
+  var fileName = template;
+
+  // Date/time variables
+  var date = message.getDate();
+  fileName = fileName.replace(/\{YYYY\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy'));
+  fileName = fileName.replace(/\{MM\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'MM'));
+  fileName = fileName.replace(/\{DD\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd'));
+  fileName = fileName.replace(/\{HH\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'HH'));
+  fileName = fileName.replace(/\{mm\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'mm'));
+  fileName = fileName.replace(/\{ss\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'ss'));
+
+  fileName = fileName.replace(/\{YYYYMMDD\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyyMMdd'));
+  fileName = fileName.replace(/\{YYYY-MM-DD\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+  fileName = fileName.replace(/\{YYYY-MM-DD_HHmmss\}/g, Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss'));
+
+  // Sender variables
+  var from = message.getFrom();
+  fileName = fileName.replace(/\{sender_email\}/g, sanitizeFileName(extractEmail(from)));
+  fileName = fileName.replace(/\{sender_name\}/g, sanitizeFileName(extractName(from)));
+
+  // Subject
+  fileName = fileName.replace(/\{subject\}/g, sanitizeFileName(message.getSubject()));
+
+  // Original attachment name
+  fileName = fileName.replace(/\{attachment_name\}/g, originalFileName || 'email');
+
+  // Add extension if not present
+  if (!fileName.match(/\.\w+$/)) {
+    var ext = originalFileName ? originalFileName.split('.').pop() : 'pdf';
+    fileName += '.' + ext;
+  }
+
+  return fileName;
+}
+
+function sanitizeFileName(name) {
+  // Remove invalid characters for file names
+  return name.replace(/[\/\\<>:"|?*]/g, '_').substring(0, 150);
+}
+```
+
+### Filter Manager
+
+```javascript
+// FilterManager.gs
+function filterAttachments(attachments, rule) {
+  if (!rule.fileFilters) return attachments;
+
+  var filtered = attachments.filter(function(attachment) {
+    var fileName = attachment.getName();
+    var fileSize = attachment.getBytes().length;
+
+    // File type filter
+    if (rule.fileFilters.allowedTypes && rule.fileFilters.allowedTypes.length > 0) {
+      var extension = fileName.split('.').pop().toLowerCase();
+      if (!rule.fileFilters.allowedTypes.includes(extension)) {
+        Logger.log('Filtered out ' + fileName + ' - wrong type');
+        return false;
+      }
+    }
+
+    // File size filter (in bytes)
+    if (rule.fileFilters.minSize && fileSize < rule.fileFilters.minSize * 1024) {
+      Logger.log('Filtered out ' + fileName + ' - too small');
+      return false;
+    }
+
+    if (rule.fileFilters.maxSize && fileSize > rule.fileFilters.maxSize * 1024 * 1024) {
+      Logger.log('Filtered out ' + fileName + ' - too large');
+      return false;
+    }
+
+    return true;
+  });
+
+  return filtered;
+}
+```
+
 ## OAuth Scopes Required
 
 ```json
@@ -420,92 +774,180 @@ function markAsProcessed(messageId) {
 
 ## Development Roadmap
 
-### Phase 1: Core Development (Week 1)
+### Phase 1: MVP - Core Features (Weeks 1-2)
 - [ ] Set up Google Apps Script project
 - [ ] Implement OpenRouter API integration
 - [ ] Build Gmail reading and filtering logic
-- [ ] Create Drive upload functionality
-- [ ] Implement Sheets writing with headers
+- [ ] Create email to PDF/HTML/Text conversion
+- [ ] Implement basic Drive upload (single folder)
+- [ ] Build Google Sheets logging with AI summaries
+- [ ] Create simple settings UI (single rule)
 - [ ] Test end-to-end with manual trigger
 - [ ] Add error handling and logging
 
-### Phase 2: User Experience (Week 2)
-- [ ] Build settings sidebar UI
-- [ ] Implement configuration validation
-- [ ] Add model selector with pricing info
-- [ ] Create test connection button
-- [ ] Add manual "Process Now" button
-- [ ] Implement onboarding wizard
-- [ ] Add status/activity log viewer
+**Deliverable:** Working prototype that saves emails + attachments with AI summaries
 
-### Phase 3: Automation & Polish (Week 3)
-- [ ] Set up time-based triggers
+### Phase 2: Standard Edition Features (Week 3)
+- [ ] Implement Rules Engine (unlimited rules)
+- [ ] Build visual Rule Builder UI
+- [ ] Add dynamic folder structure templates
+- [ ] Implement custom file naming templates
+- [ ] Create attachment filtering (type, size)
+- [ ] Add sender whitelist/blacklist
+- [ ] Build model selector with pricing info
+- [ ] Add manual "Process Now" button
+- [ ] Implement configuration validation
+
+**Deliverable:** Standard tier ready with multi-rule support
+
+### Phase 3: Pro Edition Features (Week 4)
+- [ ] Add Shared Drive support
+- [ ] Implement advanced filtering (subject keywords, date ranges)
+- [ ] Add custom Sheet column mapping
+- [ ] Create processing dashboard/activity log
+- [ ] Build onboarding wizard
+- [ ] Add batch processing optimization
+- [ ] Implement daily/weekly summary emails
+- [ ] Add export/import rules feature
+
+**Deliverable:** Pro tier complete with all advanced features
+
+### Phase 4: Polish & Testing (Week 5)
+- [ ] Set up time-based triggers with configurable frequency
 - [ ] Implement duplicate detection
 - [ ] Add retry logic for failed API calls
-- [ ] Create processing status tracking
-- [ ] Add batch processing for multiple emails
-- [ ] Implement rate limiting
-- [ ] Add email notification for errors
+- [ ] Rate limiting and quota management
+- [ ] Comprehensive error handling
+- [ ] Email notifications for errors
+- [ ] Performance optimization
+- [ ] Cross-browser testing
 
-### Phase 4: Publishing Preparation (Week 4)
-- [ ] Security audit and testing
-- [ ] Write privacy policy
-- [ ] Create user documentation
+**Deliverable:** Production-ready code
+
+### Phase 5: Documentation & Publishing (Week 6)
+- [ ] Write comprehensive user documentation
+- [ ] Create video tutorials (setup, rules, features)
 - [ ] Design app icon and screenshots
-- [ ] Record demo video
-- [ ] Set up support email/system
+- [ ] Write privacy policy and terms of service
+- [ ] Security audit
+- [ ] Set up support system (email, docs site)
 - [ ] Google Workspace Marketplace submission
 - [ ] OAuth verification review
+- [ ] Beta testing with 10-20 users
 
-## Feature Enhancements (Future)
-
-### v1.1 - Advanced Filtering
-- Multiple email accounts support
-- Sender whitelist/blacklist
-- Subject keyword filters
-- Attachment type filters
-- Date range processing
-
-### v1.2 - Customization
-- Custom column mapping
-- Template-based summaries
-- Multi-language support
-- Folder organization by sender/date
-- Custom Sheet formatting
-
-### v1.3 - Analytics
-- Processing statistics dashboard
-- Cost tracking (OpenRouter usage)
-- Email volume charts
-- Response time metrics
-
-### v1.4 - Integrations
-- Slack notifications
-- Zapier webhooks
-- Calendar event creation
-- Task creation (Google Tasks, Todoist)
+**Deliverable:** Published on Marketplace
 
 ## Monetization Strategy
 
-### Option 1: Freemium Model
-- **Free Tier:** 50 emails/month
-- **Pro Tier:** $7.99/month - Unlimited emails
-- **Business Tier:** $19.99/month - Multiple accounts, priority support
+### Pricing Tiers (Annual Subscription)
 
-### Option 2: One-Time Purchase
-- **Standard:** $39 - Lifetime license
-- **Pro:** $79 - Lifetime + priority updates
+#### Standard Edition - $69/year
+**Target:** Individual users, small teams
+**Features:**
+- Unlimited email processing
+- Save emails in PDF, HTML, or Plain Text formats
+- Save attachments to Google Drive
+- AI-powered email summaries (OpenRouter integration)
+- Google Sheets searchable index
+- **Up to 10 workflow rules**
+- Dynamic folder organization templates
+- Custom file naming templates
+- File type and size filtering
+- Sender whitelist/blacklist
+- Processing every 15-30 minutes
+- Email support
 
-### Option 3: Free + Premium Features
-- **Free:** Core functionality
-- **Premium ($4.99/month):**
-  - Advanced filters
-  - Custom prompts
-  - Batch processing
-  - Analytics dashboard
-  - Priority support
+**Value Proposition:** More affordable than competitors ($79.95) with AI intelligence they don't have
 
-**Recommended:** Option 1 (Freemium) for recurring revenue
+#### Pro Edition - $99/year
+**Target:** Power users, businesses, teams
+**Everything in Standard, plus:**
+- **Unlimited workflow rules**
+- **Shared Drive support** (team collaboration)
+- Advanced filtering (subject keywords, date ranges, attachment count)
+- Custom Google Sheets column mapping
+- Processing dashboard & activity logs
+- Multiple OpenRouter models per rule
+- **Processing every 5-10 minutes** (faster)
+- Batch processing optimization
+- Export/import rules
+- Daily/weekly email summaries
+- **Priority support** (48-hour response)
+
+**Value Proposition:** Feature parity with market leader ($99.95) plus unique AI capabilities
+
+### Competitive Positioning
+
+| Feature | Competitor ($79.95/year) | SaveMe Standard ($69) | SaveMe Pro ($99) |
+|---------|--------------------------|----------------------|------------------|
+| Email + Attachment Backup | ✓ | ✓ | ✓ |
+| **AI Summaries** | ❌ | ✓ | ✓ |
+| **Google Sheets Index** | ❌ | ✓ | ✓ |
+| **User Controls AI Costs** | ❌ | ✓ | ✓ |
+| Workflow Rules | 5 | 10 | Unlimited |
+| Shared Drive Support | Enterprise only | ❌ | ✓ |
+| Dynamic Folders | ✓ | ✓ | ✓ |
+| Custom File Naming | ✓ | ✓ | ✓ |
+| Processing Frequency | Hourly | 15-30 min | 5-10 min |
+| Daily Email Limit | 500 | Unlimited | Unlimited |
+
+**Key Differentiators:**
+1. **AI Intelligence** - We're the only solution with AI-powered summaries
+2. **Better Value** - Standard tier is $10 cheaper with unique features
+3. **Searchable Database** - Sheets integration makes emails queryable
+4. **User-Controlled Costs** - No hidden AI fees, choose your own model
+5. **Model Flexibility** - 200+ models (GPT-4, Claude, Gemini, Llama)
+
+### Revenue Projections
+
+**Conservative Scenario (Year 1):**
+- 100 Standard customers × $69 = $6,900
+- 50 Pro customers × $99 = $4,950
+- **Total:** $11,850/year
+
+**Moderate Scenario (Year 1):**
+- 500 Standard customers × $69 = $34,500
+- 200 Pro customers × $99 = $19,800
+- **Total:** $54,300/year
+
+**Optimistic Scenario (Year 1):**
+- 1,000 Standard customers × $69 = $69,000
+- 500 Pro customers × $99 = $49,500
+- **Total:** $118,500/year
+
+**Conversion Rate Assumption:** 30% Standard, 70% Pro (based on feature value)
+
+## Feature Enhancements (Post-Launch)
+
+### v1.1 - Analytics & Insights (Month 3)
+- Processing statistics dashboard
+- Cost tracking (OpenRouter usage calculator)
+- Email volume charts and trends
+- Storage usage metrics
+- Most active senders/labels
+
+### v1.2 - Advanced AI Features (Month 6)
+- Audio/video attachment transcription
+- OCR for scanned documents and images
+- Smart categorization and auto-tagging
+- Invoice/receipt data extraction
+- Sentiment analysis
+- Multi-language email translation
+
+### v1.3 - Integrations (Month 9)
+- Slack notifications for important emails
+- Zapier webhooks
+- Google Calendar event creation
+- Task creation (Google Tasks, Todoist, Asana)
+- CRM integrations (HubSpot, Salesforce)
+
+### v1.4 - Enterprise Features (Year 2)
+- Multiple Google account support
+- Team management and permissions
+- Centralized billing and admin dashboard
+- Audit logs and compliance reporting
+- SLA guarantees
+- Custom model hosting options
 
 ## Cost Analysis
 
@@ -604,20 +1046,38 @@ Example: 100 emails/month with Claude = ~$1-2/month
 - LinkedIn
 
 ### Positioning
-- "AI-Powered Email Organization for Google Workspace"
-- "Your AI Assistant for Gmail - Bring Your Own Model"
-- "Automate Email Management with Any AI Model"
+
+**Primary Tagline:**
+"The Only Gmail Backup Tool with AI-Powered Intelligence"
+
+**Secondary Messaging:**
+- "Save, Organize, and Understand Your Gmail with AI"
+- "Automated Email Backup + AI Summaries + Searchable Database"
+- "Gmail Archiving Meets Artificial Intelligence"
+- "Bring Your Own AI Model - 200+ Choices"
+
+**Key Value Props:**
+1. **For individuals:** "Never lose important emails or attachments again - with AI summaries to find what you need fast"
+2. **For businesses:** "Automate email archiving and get intelligent insights for compliance and knowledge management"
+3. **For power users:** "Ultimate flexibility - choose your AI model, organize your way"
+
+**Competitive Angle:**
+- vs. Digital Inspiration: "Same backup features + AI intelligence for less money"
+- vs. Manual methods: "Stop manually saving attachments - automate everything with smart organization"
+- vs. Google Takeout: "Live, ongoing backup with searchable index and AI insights"
 
 ## Success Metrics
 
 ### Key Performance Indicators
 - Active users (DAU/MAU)
 - Email processing volume
-- Conversion rate (free → paid)
-- User retention (30/60/90 day)
+- **Conversion rate (Standard → Pro)** - Target: 30%
+- User retention (30/60/90 day) - Target: 80%/70%/60%
 - Average emails processed per user
-- Support ticket volume
-- User rating in Marketplace
+- Average rules per user (complexity indicator)
+- Support ticket volume - Target: <5% of users
+- User rating in Marketplace - Target: 4.5+ stars
+- Net Promoter Score (NPS) - Target: 40+
 
 ## Resources & References
 
@@ -667,6 +1127,38 @@ Example: 100 emails/month with Claude = ~$1-2/month
 
 ---
 
-**Project Status:** Planning Complete - Ready for Development
+## Competitive Analysis Summary
+
+**Main Competitor:** Save Emails to Google Drive by Digital Inspiration
+- **Pricing:** $79.95/year (Standard), $99.95/year (Enterprise)
+- **Strengths:** Established product, proven reliability, comprehensive backup
+- **Weaknesses:** No AI features, no searchable database, hourly processing only
+
+**Our Advantages:**
+1. ✅ **AI-powered summaries** - Unique feature, high value-add
+2. ✅ **Google Sheets index** - Makes emails searchable/queryable
+3. ✅ **User controls AI costs** - Transparency and flexibility
+4. ✅ **Better pricing** - $69 vs $79.95 for similar features
+5. ✅ **Faster processing** - Every 5-10 min vs hourly
+6. ✅ **200+ AI models** - Ultimate flexibility
+
+**Feature Parity Required:**
+- ✓ Email to PDF/HTML/Text conversion
+- ✓ Dynamic folder organization
+- ✓ Custom file naming templates
+- ✓ Multiple workflow rules
+- ✓ File type/size filtering
+- ✓ Shared Drive support (Pro tier)
+
+**Market Opportunity:**
+- Competitor has proven market demand
+- Our AI features address unmet need for email understanding
+- Price point is competitive while offering more value
+- Sheets integration creates vendor lock-in (good for retention)
+
+---
+
+**Project Status:** Enhanced Planning Complete - Competitive Feature Set Defined
 **Last Updated:** 2025-11-04
-**Estimated Launch:** 4-6 weeks from start
+**Estimated Timeline:** 6 weeks to MVP, 8-10 weeks to full launch
+**Next Step:** Begin Phase 1 development (Core MVP features)
