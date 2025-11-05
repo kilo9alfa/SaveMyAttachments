@@ -250,20 +250,14 @@
     <div class="success-message" id="successMessage"></div>
     <div class="error-message" id="errorMessage"></div>
 
-    <!-- API & Authentication -->
+    <!-- Google Drive Configuration -->
     <div class="section">
-      <div class="section-title">🔑 API & Authentication</div>
+      <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label for="apiKey">OpenRouter API Key *</label>
-        <input type="text" id="apiKey" placeholder="sk-or-v1-...">
-        <div class="help-text">Get your API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></div>
-      </div>
-
-      <div class="form-group">
-        <label for="folderId">Google Drive Folder ID *</label>
+        <label for="folderId">Drive Folder *</label>
         <input type="text" id="folderId" placeholder="Paste folder URL or ID here">
-        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here</div>
+        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here. All emails and attachments will be saved here.</div>
       </div>
     </div>
 
@@ -364,6 +358,12 @@
       </div>
 
       <div id="aiSettingsGroup">
+        <div class="form-group">
+          <label for="apiKey">OpenRouter API Key *</label>
+          <input type="text" id="apiKey" placeholder="sk-or-v1-...">
+          <div class="help-text">Get your API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> (only needed when AI is enabled)</div>
+        </div>
+
         <div class="form-group">
           <label for="aiModel">AI Model</label>
           <select id="aiModel">
