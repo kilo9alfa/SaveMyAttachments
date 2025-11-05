@@ -4,6 +4,49 @@
  */
 
 /**
+ * Get diagnostics data as object (for export)
+ */
+function getDiagnosticsData() {
+  var sheet = getCurrentSheet();
+  var lastRow = sheet.getLastRow();
+  var messageIds = [];
+
+  if (lastRow > 1) {
+    var idsRange = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    messageIds = idsRange.map(function(row) { return row[0]; }).filter(function(id) { return id !== ''; });
+  }
+
+  var props = PropertiesService.getUserProperties();
+  var processed = JSON.parse(props.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+  var trackedCacheKeys = JSON.parse(props.getProperty('CACHE_KEYS_V2') || '[]');
+  var config = getConfig();
+
+  return {
+    sheet: {
+      totalRows: lastRow,
+      dataRows: lastRow > 0 ? lastRow - 1 : 0,
+      messageIdCount: messageIds.length,
+      sampleMessageIds: messageIds.slice(0, 5)
+    },
+    properties: {
+      processedEmailsTracked: processed.length,
+      mostRecentSubject: processed.length > 0 ? processed[processed.length - 1].subject : 'None',
+      trackedCacheKeys: trackedCacheKeys.length
+    },
+    config: {
+      daysBack: config.daysBack,
+      batchSize: config.batchSize,
+      minAttachmentSizeKB: config.minAttachmentSizeKB,
+      model: config.model,
+      newestFirst: config.newestFirst,
+      enableAI: config.enableAI,
+      saveEmailBody: config.saveEmailBody,
+      saveAttachments: config.saveAttachments
+    }
+  };
+}
+
+/**
  * Export full logs to a text file in Drive
  * Returns shareable link
  */
