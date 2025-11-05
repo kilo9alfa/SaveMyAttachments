@@ -101,18 +101,30 @@ function clearProcessedEmails() {
 
   Logger.log('Starting clear processed emails');
 
-  // Get tracked cache keys (v2)
-  var cacheKeys = JSON.parse(props.getProperty('CACHE_KEYS_V2') || '[]');
-  Logger.log('Found ' + cacheKeys.length + ' tracked cache keys');
+  // Get tracked cache keys (both V1 and V2)
+  var cacheKeysV1 = JSON.parse(props.getProperty('CACHE_KEYS') || '[]');
+  var cacheKeysV2 = JSON.parse(props.getProperty('CACHE_KEYS_V2') || '[]');
+  var allCacheKeys = cacheKeysV1.concat(cacheKeysV2);
+  Logger.log('Found ' + allCacheKeys.length + ' tracked cache keys');
 
   // Clear cache using tracked keys
-  if (cacheKeys.length > 0) {
-    cache.removeAll(cacheKeys);
-    Logger.log('Cleared ' + cacheKeys.length + ' cache entries');
+  if (allCacheKeys.length > 0) {
+    cache.removeAll(allCacheKeys);
+    Logger.log('Cleared ' + allCacheKeys.length + ' cache entries');
   }
 
-  // Get processed count before deleting
+  // Also clear cache keys for all message IDs in properties (double safety)
   var processed = JSON.parse(props.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+  var manualKeys = [];
+  for (var i = 0; i < processed.length; i++) {
+    manualKeys.push('processed_v2_' + processed[i].id);
+    manualKeys.push('processed_' + processed[i].id); // Old V1 format too
+  }
+  if (manualKeys.length > 0) {
+    cache.removeAll(manualKeys);
+    Logger.log('Also cleared ' + manualKeys.length + ' manual cache keys based on message IDs');
+  }
+
   var clearedCount = processed.length;
   Logger.log('Clearing ' + clearedCount + ' processed email entries from tracking');
 
@@ -138,12 +150,28 @@ function nuclearClearEverything() {
 
   Logger.log('🔥 NUCLEAR CLEAR: Removing ALL cache and SaveMe properties');
 
-  // Flush entire cache
+  // Clear cache using tracked keys (CacheService doesn't have getKeys() method!)
   try {
-    var keys = cache.getKeys();
-    if (keys && keys.length > 0) {
-      cache.removeAll(keys);
-      Logger.log('Removed ' + keys.length + ' cache keys');
+    // Get all tracked cache keys from properties
+    var cacheKeysV1 = JSON.parse(props.getProperty('CACHE_KEYS') || '[]');
+    var cacheKeysV2 = JSON.parse(props.getProperty('CACHE_KEYS_V2') || '[]');
+    var allCacheKeys = cacheKeysV1.concat(cacheKeysV2);
+
+    if (allCacheKeys.length > 0) {
+      cache.removeAll(allCacheKeys);
+      Logger.log('Removed ' + allCacheKeys.length + ' tracked cache keys');
+    }
+
+    // Also try to clear common cache key patterns manually
+    var processed = JSON.parse(props.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+    var manualKeys = [];
+    for (var i = 0; i < processed.length; i++) {
+      manualKeys.push('processed_v2_' + processed[i].id);
+      manualKeys.push('processed_' + processed[i].id); // Old V1 format
+    }
+    if (manualKeys.length > 0) {
+      cache.removeAll(manualKeys);
+      Logger.log('Removed ' + manualKeys.length + ' manual cache keys');
     }
   } catch (e) {
     Logger.log('Cache clear error: ' + e.toString());
