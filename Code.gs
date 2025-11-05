@@ -624,26 +624,41 @@ function nuclearClearUI() {
 
         Logger.log('=== NUCLEAR CLEAR STARTING ===');
 
+        // Get counts BEFORE clearing
+        var rowsBefore = sheet.getLastRow();
+        var verifyPropsBefore = PropertiesService.getUserProperties();
+        var processedBefore = JSON.parse(verifyPropsBefore.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+        var cacheKeysBefore = JSON.parse(verifyPropsBefore.getProperty('CACHE_KEYS_V2') || '[]');
+
+        Logger.log('BEFORE: Sheet rows: ' + rowsBefore + ', Tracked emails: ' + processedBefore.length + ', Cache keys: ' + cacheKeysBefore.length);
+
         // Clear sheet
         sheet.clear();
-        Logger.log('Sheet cleared');
+        Logger.log('Sheet cleared (was ' + rowsBefore + ' rows)');
 
         // Nuclear clear of cache and properties
         var deletedProps = nuclearClearEverything();
         Logger.log('Deleted ' + deletedProps + ' properties and flushed cache');
 
-        // Verify
-        var verifyProps = PropertiesService.getUserProperties();
-        var verifyProcessed = JSON.parse(verifyProps.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+        // Verify AFTER clearing
+        var verifyPropsAfter = PropertiesService.getUserProperties();
+        var processedAfter = JSON.parse(verifyPropsAfter.getProperty('PROCESSED_MESSAGES_V2') || '[]');
+        var cacheKeysAfter = JSON.parse(verifyPropsAfter.getProperty('CACHE_KEYS_V2') || '[]');
+        var rowsAfter = sheet.getLastRow();
 
         Logger.log('=== NUCLEAR CLEAR COMPLETE ===');
-        Logger.log('Remaining tracked emails (V2): ' + verifyProcessed.length);
+        Logger.log('AFTER: Sheet rows: ' + rowsAfter + ', Tracked emails: ' + processedAfter.length + ', Cache keys: ' + cacheKeysAfter.length);
 
         var message = '✅ Nuclear Clear Complete!\n\n';
-        message += 'Sheet: CLEARED\n';
-        message += 'Cache: FLUSHED\n';
-        message += 'Properties deleted: ' + deletedProps + '\n';
-        message += 'Tracked emails remaining: ' + verifyProcessed.length + '\n\n';
+        message += 'BEFORE:\n';
+        message += '  Sheet rows: ' + rowsBefore + '\n';
+        message += '  Tracked emails: ' + processedBefore.length + '\n';
+        message += '  Cache keys: ' + cacheKeysBefore.length + '\n\n';
+        message += 'AFTER:\n';
+        message += '  Sheet rows: ' + rowsAfter + '\n';
+        message += '  Tracked emails: ' + processedAfter.length + '\n';
+        message += '  Cache keys: ' + cacheKeysAfter.length + '\n';
+        message += '  Properties deleted: ' + deletedProps + '\n\n';
         message += 'Everything has been force-reset.\n\n';
         message += 'Try processing emails now.';
 
