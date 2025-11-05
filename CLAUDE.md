@@ -18,13 +18,16 @@ A Google Workspace Add-on that automatically processes incoming emails, saves at
 5. **AI Summarization** - Generates concise email summaries using OpenRouter.ai (200+ model choices)
 6. **Spreadsheet Index** - Creates searchable Google Sheets database with email metadata, summaries, and Drive links
 7. **Advanced Filtering** - File type filters, size limits, sender whitelists/blacklists
+8. **Custom AI Questions** - Define custom questions per rule to extract structured data into specific Sheet columns (e.g., "Is this an invoice that needs to be paid?" → "invoice-pending"/"invoice-paid")
 
 ### Key Differentiators vs. Competitors
 
 - **AI-Powered Intelligence** - Unlike competitors, we provide AI summaries and insights, not just backup
+- **Custom Data Extraction** - Define custom AI questions to extract structured data (invoice status, amounts, categories, etc.) into Sheet columns
 - **User-controlled AI costs** - Users bring their own OpenRouter API key (no hidden AI fees)
 - **Model flexibility** - Access to 200+ models (GPT-4, Claude, Gemini, Llama, Mistral, etc.)
 - **Searchable Database** - Google Sheets integration creates a queryable index (competitors only save files)
+- **PDF Content Analysis** - AI analyzes both email text AND extracted PDF content for comprehensive understanding
 - **Better Value** - More features at lower price point than market leader ($69-99/year vs $80-100/year)
 - **Privacy-focused** - No email content stored on our servers or processed through our accounts
 - **Shared Drive Support** - Team collaboration features included
@@ -47,12 +50,14 @@ SaveMe/
 ├── GmailProcessor.gs          # Email fetching, parsing & filtering
 ├── DriveManager.gs            # File upload, folder organization & naming
 ├── EmailConverter.gs          # Email to PDF/HTML/Plain Text conversion
+├── PDFExtractor.gs            # Extract text content from PDF attachments
 ├── SheetsManager.gs           # Spreadsheet row creation & management
 ├── RulesEngine.gs             # Multiple workflow rules management
 ├── FolderTemplates.gs         # Dynamic folder structure creation
 ├── FileNaming.gs              # Custom file naming template engine
 ├── FilterManager.gs           # File type, size, sender filtering
 ├── OpenRouterService.gs       # AI API integration & summarization
+├── CustomQuestions.gs         # Custom AI question processing & structured data extraction
 ├── SettingsManager.gs         # User configuration storage & retrieval
 ├── TriggerManager.gs          # Automated email checking setup
 ├── Sidebar.html               # User settings configuration UI
@@ -76,15 +81,19 @@ Gmail Inbox
     ↓
 [Extract Attachments] → Filter by type/size
     ↓
+[Extract PDF Text] → Extract text content from PDF attachments (if present)
+    ↓
 [Folder Template] → Build dynamic folder path (e.g., "2024/11/sender@company.com/")
     ↓
 [File Naming] → Apply custom naming template (e.g., "2024-11-04_Subject_Line.pdf")
     ↓
 [Save to Drive] → Upload email + attachments to organized folders
     ↓
-[Email Content] → OpenRouter API → [AI Summary]
+[Email + PDF Content] → OpenRouter API → [AI Summary + Custom Question Answers]
     ↓
-[Combine Data] → Append row to Google Sheet with Drive links
+[Structured Data] → Extract answers to custom questions (e.g., invoice status, amounts, categories)
+    ↓
+[Combine Data] → Append row to Google Sheet with Drive links + custom columns
     ↓
 [Mark as Processed] → Update tracking & apply label
 ```
@@ -126,6 +135,63 @@ Gmail Inbox
 - **Summary Prompt** - Custom AI instruction template
 - **Sheet Column Mapping** - Customize what data goes in which columns
 - **AI Processing** - Enable/disable AI summarization for this rule
+
+### Custom AI Questions (Per Rule)
+
+Define custom questions that the AI will answer for each processed email. The AI analyzes both the email body and extracted PDF content to provide structured answers that populate specific Google Sheets columns.
+
+**Question Configuration:**
+- **Question Text** - The question to ask the AI (e.g., "Is this an invoice that needs to be paid?")
+- **Column Name** - Target column in Google Sheet for the answer
+- **Expected Values** - Predefined answer options (e.g., "invoice-pending", "invoice-paid", "not-invoice")
+- **Answer Format** - Type of answer expected (text, number, date, boolean, category)
+- **Default Value** - Fallback value if AI cannot determine answer
+
+**Example Use Cases:**
+
+1. **Invoice Status Detection**
+   - Question: "Is this an invoice that needs to be paid?"
+   - Column: "Invoice Status"
+   - Expected Values: "invoice-pending", "invoice-paid", "not-invoice"
+   - Format: Category
+
+2. **Amount Extraction**
+   - Question: "What is the total amount or invoice total mentioned?"
+   - Column: "Amount"
+   - Expected Values: Dollar amount or "N/A"
+   - Format: Number
+
+3. **Priority Classification**
+   - Question: "What is the urgency level of this email?"
+   - Column: "Priority"
+   - Expected Values: "urgent", "normal", "low"
+   - Format: Category
+
+4. **Due Date Extraction**
+   - Question: "What is the due date or deadline mentioned?"
+   - Column: "Due Date"
+   - Expected Values: Date in YYYY-MM-DD format or "No due date"
+   - Format: Date
+
+5. **Category Detection**
+   - Question: "What category does this email belong to?"
+   - Column: "Category"
+   - Expected Values: "sales", "support", "billing", "hr", "other"
+   - Format: Category
+
+6. **Action Required**
+   - Question: "Does this email require action from me?"
+   - Column: "Action Required"
+   - Expected Values: "yes", "no"
+   - Format: Boolean
+
+**Features:**
+- Unlimited questions per rule (Pro tier) / 5 questions per rule (Standard tier)
+- AI analyzes both email body AND PDF attachment content
+- Structured output ensures consistent data format
+- Multiple choice or free-form answers
+- Questions can be enabled/disabled per rule
+- Different questions for different rule types
 
 ### Advanced Filters (Per Rule)
 
@@ -750,6 +816,286 @@ function filterAttachments(attachments, rule) {
 }
 ```
 
+### PDF Text Extraction
+
+```javascript
+// PDFExtractor.gs
+function extractTextFromPDFs(attachments) {
+  var extractedTexts = [];
+
+  attachments.forEach(function(attachment) {
+    var fileName = attachment.getName().toLowerCase();
+
+    // Only process PDF files
+    if (!fileName.endsWith('.pdf')) {
+      return;
+    }
+
+    try {
+      // Create temporary file in Drive to extract text
+      var blob = attachment.copyBlob();
+      var tempFile = DriveApp.createFile(blob);
+
+      // Convert PDF to Google Doc to extract text
+      var docFile = Drive.Files.copy({
+        mimeType: 'application/vnd.google-apps.document'
+      }, tempFile.getId());
+
+      // Get the text content
+      var doc = DocumentApp.openById(docFile.id);
+      var text = doc.getBody().getText();
+
+      extractedTexts.push({
+        fileName: attachment.getName(),
+        text: text.substring(0, 10000) // Limit to 10k chars per PDF
+      });
+
+      // Clean up temporary files
+      DriveApp.getFileById(tempFile.getId()).setTrashed(true);
+      DriveApp.getFileById(docFile.id).setTrashed(true);
+
+      Logger.log('Extracted text from PDF: ' + attachment.getName());
+    } catch (e) {
+      Logger.log('Error extracting text from ' + attachment.getName() + ': ' + e);
+      extractedTexts.push({
+        fileName: attachment.getName(),
+        text: '[PDF text extraction failed]'
+      });
+    }
+  });
+
+  return extractedTexts;
+}
+
+function combineEmailAndPDFContent(emailBody, pdfTexts) {
+  var combined = 'EMAIL CONTENT:\n' + emailBody + '\n\n';
+
+  if (pdfTexts && pdfTexts.length > 0) {
+    combined += 'PDF ATTACHMENTS:\n\n';
+    pdfTexts.forEach(function(pdf) {
+      combined += '--- ' + pdf.fileName + ' ---\n';
+      combined += pdf.text + '\n\n';
+    });
+  }
+
+  return combined;
+}
+```
+
+### Custom Questions Engine
+
+```javascript
+// CustomQuestions.gs
+function processCustomQuestions(message, attachments, rule, apiKey, model) {
+  // Check if rule has custom questions enabled
+  if (!rule.customQuestions || rule.customQuestions.length === 0) {
+    return {};
+  }
+
+  // Extract email content
+  var emailBody = message.getPlainBody().substring(0, 5000);
+
+  // Extract PDF content if present
+  var pdfTexts = [];
+  if (attachments && attachments.length > 0) {
+    pdfTexts = extractTextFromPDFs(attachments);
+  }
+
+  // Combine email and PDF content
+  var fullContent = combineEmailAndPDFContent(emailBody, pdfTexts);
+
+  // Process each question
+  var answers = {};
+
+  rule.customQuestions.forEach(function(question) {
+    if (!question.enabled) return;
+
+    try {
+      var answer = askCustomQuestion(
+        fullContent,
+        question,
+        apiKey,
+        model
+      );
+
+      answers[question.columnName] = answer;
+      Logger.log('Custom question "' + question.questionText + '" answered: ' + answer);
+    } catch (e) {
+      Logger.log('Error processing custom question: ' + e);
+      answers[question.columnName] = question.defaultValue || 'Error';
+    }
+  });
+
+  return answers;
+}
+
+function askCustomQuestion(content, question, apiKey, model) {
+  var url = 'https://openrouter.ai/api/v1/chat/completions';
+
+  // Build the prompt with instructions for structured output
+  var prompt = buildQuestionPrompt(question, content);
+
+  var payload = {
+    model: model,
+    messages: [
+      {
+        role: "system",
+        content: "You are a data extraction assistant. Analyze the provided content and answer the question with ONLY the requested value. Do not add explanations or additional text."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    max_tokens: 150,
+    temperature: 0.1 // Low temperature for consistent extraction
+  };
+
+  var options = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'Authorization': 'Bearer ' + apiKey,
+      'HTTP-Referer': 'https://saveme-gmail-assistant.com',
+      'X-Title': 'SaveMe Gmail AI Assistant'
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    var responseCode = response.getResponseCode();
+
+    if (responseCode !== 200) {
+      Logger.log('OpenRouter API Error: ' + response.getContentText());
+      return question.defaultValue || 'API Error';
+    }
+
+    var result = JSON.parse(response.getContentText());
+    var answer = result.choices[0].message.content.trim();
+
+    // Validate answer against expected values if provided
+    if (question.expectedValues && question.expectedValues.length > 0) {
+      var lowerAnswer = answer.toLowerCase();
+      var validValue = question.expectedValues.find(function(val) {
+        return val.toLowerCase() === lowerAnswer;
+      });
+
+      if (validValue) {
+        return validValue;
+      } else {
+        // Try partial match
+        var partialMatch = question.expectedValues.find(function(val) {
+          return lowerAnswer.includes(val.toLowerCase());
+        });
+
+        if (partialMatch) {
+          return partialMatch;
+        } else {
+          Logger.log('Answer "' + answer + '" not in expected values, using default');
+          return question.defaultValue || answer;
+        }
+      }
+    }
+
+    // Format answer based on type
+    return formatAnswer(answer, question.answerFormat);
+
+  } catch (e) {
+    Logger.log('Custom question API exception: ' + e);
+    return question.defaultValue || 'Error';
+  }
+}
+
+function buildQuestionPrompt(question, content) {
+  var prompt = 'CONTENT TO ANALYZE:\n' + content + '\n\n';
+  prompt += 'QUESTION: ' + question.questionText + '\n\n';
+
+  if (question.expectedValues && question.expectedValues.length > 0) {
+    prompt += 'VALID RESPONSES (choose one):\n';
+    question.expectedValues.forEach(function(val) {
+      prompt += '- ' + val + '\n';
+    });
+    prompt += '\nRespond with ONLY one of the valid responses above.\n';
+  } else {
+    prompt += 'RESPONSE FORMAT: ' + question.answerFormat + '\n';
+    prompt += 'Provide a concise answer in the requested format.\n';
+  }
+
+  return prompt;
+}
+
+function formatAnswer(answer, format) {
+  switch(format) {
+    case 'number':
+      // Extract number from text
+      var numMatch = answer.match(/[\d,]+\.?\d*/);
+      return numMatch ? numMatch[0].replace(/,/g, '') : 'N/A';
+
+    case 'date':
+      // Validate date format
+      if (answer.match(/\d{4}-\d{2}-\d{2}/)) {
+        return answer;
+      } else {
+        return 'Invalid date';
+      }
+
+    case 'boolean':
+      var lower = answer.toLowerCase();
+      if (lower.includes('yes') || lower.includes('true')) return 'Yes';
+      if (lower.includes('no') || lower.includes('false')) return 'No';
+      return 'Unknown';
+
+    case 'category':
+    case 'text':
+    default:
+      return answer;
+  }
+}
+
+// Update SheetsManager to support custom columns
+function addToSheetWithCustomColumns(data, customAnswers, sheetUrl) {
+  var sheetId = extractIdFromUrl(sheetUrl);
+  var spreadsheet = SpreadsheetApp.openById(sheetId);
+  var sheet = spreadsheet.getActiveSheet();
+
+  // Build header row including custom columns
+  var baseHeaders = ['Date', 'Sender', 'Subject', 'AI Summary', 'Attachments', 'Drive Links'];
+  var customHeaders = Object.keys(customAnswers);
+  var allHeaders = baseHeaders.concat(customHeaders);
+
+  // Ensure headers exist
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(allHeaders);
+    sheet.getRange(1, 1, 1, allHeaders.length).setFontWeight('bold');
+  }
+
+  // Build data row
+  var baseData = [
+    data.timestamp,
+    data.sender,
+    data.subject,
+    data.summary,
+    data.attachmentCount,
+    data.driveLinks
+  ];
+
+  var customData = customHeaders.map(function(header) {
+    return customAnswers[header] || '';
+  });
+
+  var rowData = baseData.concat(customData);
+
+  // Add data row
+  sheet.appendRow(rowData);
+
+  // Format the new row
+  var lastRow = sheet.getLastRow();
+  sheet.getRange(lastRow, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+}
+```
+
 ## OAuth Scopes Required
 
 ```json
@@ -797,20 +1143,25 @@ function filterAttachments(attachments, rule) {
 - [ ] Build model selector with pricing info
 - [ ] Add manual "Process Now" button
 - [ ] Implement configuration validation
+- [ ] Add PDF text extraction functionality
+- [ ] Build Custom AI Questions engine (5 per rule limit for Standard)
 
-**Deliverable:** Standard tier ready with multi-rule support
+**Deliverable:** Standard tier ready with multi-rule support and basic custom questions
 
 ### Phase 3: Pro Edition Features (Week 4)
 - [ ] Add Shared Drive support
 - [ ] Implement advanced filtering (subject keywords, date ranges)
 - [ ] Add custom Sheet column mapping
+- [ ] Unlock unlimited custom AI questions per rule
+- [ ] Build Custom Questions UI (visual question builder)
+- [ ] Add question templates library (invoices, receipts, etc.)
 - [ ] Create processing dashboard/activity log
 - [ ] Build onboarding wizard
 - [ ] Add batch processing optimization
 - [ ] Implement daily/weekly summary emails
 - [ ] Add export/import rules feature
 
-**Deliverable:** Pro tier complete with all advanced features
+**Deliverable:** Pro tier complete with all advanced features including unlimited custom questions
 
 ### Phase 4: Polish & Testing (Week 5)
 - [ ] Set up time-based triggers with configurable frequency
@@ -850,6 +1201,8 @@ function filterAttachments(attachments, rule) {
 - AI-powered email summaries (OpenRouter integration)
 - Google Sheets searchable index
 - **Up to 10 workflow rules**
+- **Up to 5 custom AI questions per rule**
+- PDF content analysis and text extraction
 - Dynamic folder organization templates
 - Custom file naming templates
 - File type and size filtering
@@ -863,6 +1216,7 @@ function filterAttachments(attachments, rule) {
 **Target:** Power users, businesses, teams
 **Everything in Standard, plus:**
 - **Unlimited workflow rules**
+- **Unlimited custom AI questions per rule**
 - **Shared Drive support** (team collaboration)
 - Advanced filtering (subject keywords, date ranges, attachment count)
 - Custom Google Sheets column mapping
@@ -882,6 +1236,8 @@ function filterAttachments(attachments, rule) {
 |---------|--------------------------|----------------------|------------------|
 | Email + Attachment Backup | ✓ | ✓ | ✓ |
 | **AI Summaries** | ❌ | ✓ | ✓ |
+| **Custom AI Questions** | ❌ | 5 per rule | Unlimited |
+| **PDF Content Analysis** | ❌ | ✓ | ✓ |
 | **Google Sheets Index** | ❌ | ✓ | ✓ |
 | **User Controls AI Costs** | ❌ | ✓ | ✓ |
 | Workflow Rules | 5 | 10 | Unlimited |
@@ -893,10 +1249,12 @@ function filterAttachments(attachments, rule) {
 
 **Key Differentiators:**
 1. **AI Intelligence** - We're the only solution with AI-powered summaries
-2. **Better Value** - Standard tier is $10 cheaper with unique features
-3. **Searchable Database** - Sheets integration makes emails queryable
-4. **User-Controlled Costs** - No hidden AI fees, choose your own model
-5. **Model Flexibility** - 200+ models (GPT-4, Claude, Gemini, Llama)
+2. **Structured Data Extraction** - Custom AI questions extract specific data into Sheet columns
+3. **PDF Content Analysis** - AI reads and understands PDF attachments, not just filenames
+4. **Better Value** - Standard tier is $10 cheaper with unique features
+5. **Searchable Database** - Sheets integration makes emails queryable
+6. **User-Controlled Costs** - No hidden AI fees, choose your own model
+7. **Model Flexibility** - 200+ models (GPT-4, Claude, Gemini, Llama)
 
 ### Revenue Projections
 
@@ -927,10 +1285,15 @@ function filterAttachments(attachments, rule) {
 - Most active senders/labels
 
 ### v1.2 - Advanced AI Features (Month 6)
+- **Enhanced Custom Questions**
+  - Question templates marketplace (community-shared question sets)
+  - Conditional questions (only ask if previous answer matches criteria)
+  - Multi-value extraction (extract multiple items from a single email)
+  - Confidence scores for extracted data
 - Audio/video attachment transcription
 - OCR for scanned documents and images
 - Smart categorization and auto-tagging
-- Invoice/receipt data extraction
+- Advanced invoice/receipt data extraction (line items, tax breakdowns)
 - Sentiment analysis
 - Multi-language email translation
 
@@ -1136,11 +1499,13 @@ Example: 100 emails/month with Claude = ~$1-2/month
 
 **Our Advantages:**
 1. ✅ **AI-powered summaries** - Unique feature, high value-add
-2. ✅ **Google Sheets index** - Makes emails searchable/queryable
-3. ✅ **User controls AI costs** - Transparency and flexibility
-4. ✅ **Better pricing** - $69 vs $79.95 for similar features
-5. ✅ **Faster processing** - Every 5-10 min vs hourly
-6. ✅ **200+ AI models** - Ultimate flexibility
+2. ✅ **Custom AI questions** - Extract structured data (invoice status, amounts, categories) into Sheet columns
+3. ✅ **PDF content analysis** - AI reads and understands PDF attachments, not just filenames
+4. ✅ **Google Sheets index** - Makes emails searchable/queryable with custom columns
+5. ✅ **User controls AI costs** - Transparency and flexibility
+6. ✅ **Better pricing** - $69 vs $79.95 for similar features
+7. ✅ **Faster processing** - Every 5-10 min vs hourly
+8. ✅ **200+ AI models** - Ultimate flexibility
 
 **Feature Parity Required:**
 - ✓ Email to PDF/HTML/Text conversion
@@ -1158,7 +1523,25 @@ Example: 100 emails/month with Claude = ~$1-2/month
 
 ---
 
-**Project Status:** Enhanced Planning Complete - Competitive Feature Set Defined
-**Last Updated:** 2025-11-04
+**Project Status:** Enhanced Planning Complete - Custom AI Questions Feature Added
+**Last Updated:** 2025-11-05
 **Estimated Timeline:** 6 weeks to MVP, 8-10 weeks to full launch
 **Next Step:** Begin Phase 1 development (Core MVP features)
+
+## Feature Enhancement: Custom AI Questions
+
+This feature allows users to define custom questions that the AI will answer for each processed email. The AI analyzes both the email body AND extracted PDF content to provide structured answers that populate specific Google Sheets columns.
+
+**Key Benefits:**
+- **Structured Data Extraction** - Turn unstructured email content into queryable database fields
+- **Flexible & Powerful** - Ask any question, get structured answers (categories, amounts, dates, yes/no)
+- **PDF-Aware** - AI reads PDF invoices, receipts, documents to extract data accurately
+- **Business Intelligence** - Build dashboards, filter/sort by custom fields, track KPIs
+- **Workflow Automation** - Different questions for different email types (invoices, support, sales)
+
+**Example Use Cases:**
+- Invoice management: "Payment status?", "Amount?", "Due date?"
+- Customer support: "Urgency level?", "Issue category?", "Customer name?"
+- Sales pipeline: "Lead quality?", "Budget mentioned?", "Next action?"
+- Receipts: "Vendor name?", "Total amount?", "Expense category?"
+- HR emails: "Leave dates?", "Leave type?", "Days requested?"

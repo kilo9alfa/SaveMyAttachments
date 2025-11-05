@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #1a73e8;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .section:last-of-type {
+      border-bottom: none;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 20px;
+      background: #1a73e8;
+      margin-right: 10px;
+      border-radius: 2px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 10px;
+      margin-top: 3px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .template-hint {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .template-hint code {
+      background: #e8eaed;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #1a73e8;
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: #1557b0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e8eaed;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #1a73e8;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ SaveMe Configuration</h1>
+    <p class="subtitle">Configure all settings in one place</p>
+
+    <div class="success-message" id="successMessage"></div>
+    <div class="error-message" id="errorMessage"></div>
+
+    <!-- API & Authentication -->
+    <div class="section">
+      <div class="section-title">🔑 API & Authentication</div>
+
+      <div class="form-group">
+        <label for="apiKey">OpenRouter API Key *</label>
+        <input type="text" id="apiKey" placeholder="sk-or-v1-...">
+        <div class="help-text">Get your API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></div>
+      </div>
+
+      <div class="form-group">
+        <label for="folderId">Google Drive Folder ID *</label>
+        <input type="text" id="folderId" placeholder="Paste folder URL or ID here">
+        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here</div>
+      </div>
+    </div>
+
+    <!-- What to Save -->
+    <div class="section">
+      <div class="section-title">💾 What to Save</div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="saveEmailBody">
+        <label for="saveEmailBody" class="checkbox-label">
+          Save Email Messages as individual files
+          <div class="help-text">Save the email body as PDF, HTML, or plain text</div>
+        </label>
+      </div>
+
+      <div class="form-group" id="emailFormatGroup" style="margin-left: 28px; display: none;">
+        <label for="emailFormat">Email Format</label>
+        <select id="emailFormat">
+          <option value="pdf">PDF (recommended)</option>
+          <option value="html">HTML</option>
+          <option value="txt">Plain Text</option>
+          <option value="all">All formats</option>
+        </select>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="saveAttachments" checked>
+        <label for="saveAttachments" class="checkbox-label">
+          Save Email Attachments as files
+          <div class="help-text">Save all attachments to Google Drive</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- File Naming -->
+    <div class="section">
+      <div class="section-title">📝 File Naming & Organization</div>
+
+      <div class="form-group">
+        <label for="fileNamingTemplate">Attachment File Name Template</label>
+        <input type="text" id="fileNamingTemplate" value="{{Year}}.{{Month}}.{{Day}}-{{AttachmentName}}">
+        <div class="template-hint">
+          <strong>Available variables:</strong><br>
+          <code>{{Year}}</code> <code>{{Month}}</code> <code>{{Day}}</code> <code>{{Date}}</code><br>
+          <code>{{Sender}}</code> <code>{{SenderEmail}}</code> <code>{{Subject}}</code><br>
+          <code>{{AttachmentName}}</code> <code>{{OriginalName}}</code>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="emailNamingTemplate">Email Body File Name Template</label>
+        <input type="text" id="emailNamingTemplate" value="{{Year}}-{{Month}}-{{Day}}_{{Subject}}">
+        <div class="help-text">Only applies if "Save Email Messages" is enabled</div>
+      </div>
+    </div>
+
+    <!-- File Filtering -->
+    <div class="section">
+      <div class="section-title">🔍 File Filtering</div>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="minAttachmentSize">Minimum Attachment Size (KB)</label>
+          <input type="number" id="minAttachmentSize" value="5" min="0" max="100">
+          <div class="help-text">Skip files smaller than this (e.g., inline images)</div>
+        </div>
+
+        <div class="form-group">
+          <label for="maxAttachmentSize">Maximum Attachment Size (MB)</label>
+          <input type="number" id="maxAttachmentSize" value="0" min="0" max="100">
+          <div class="help-text">0 = no limit</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="allowedExtensions">Allowed File Extensions (optional)</label>
+        <input type="text" id="allowedExtensions" placeholder="pdf, docx, xlsx, jpg, png">
+        <div class="help-text">Leave blank to allow all. Comma-separated list.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="disallowedExtensions">Disallowed File Extensions (optional)</label>
+        <input type="text" id="disallowedExtensions" placeholder="exe, zip, dmg">
+        <div class="help-text">Block specific file types. Comma-separated list.</div>
+      </div>
+    </div>
+
+    <!-- AI Settings -->
+    <div class="section">
+      <div class="section-title">🤖 AI Summarization</div>
+
+      <div class="form-group">
+        <label for="aiModel">AI Model</label>
+        <select id="aiModel">
+          <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Best quality, ~$3/1M tokens)</option>
+          <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & cheap, ~$0.25/1M tokens)</option>
+          <option value="anthropic/claude-3-opus">Claude 3 Opus (Highest quality, ~$15/1M tokens)</option>
+          <option value="openai/gpt-4-turbo">GPT-4 Turbo (High quality, ~$10/1M tokens)</option>
+          <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo (Cheap, ~$0.50/1M tokens)</option>
+          <option value="google/gemini-pro">Gemini Pro (Free tier available)</option>
+          <option value="meta-llama/llama-3-70b-instruct">Llama 3 70B (~$0.70/1M tokens)</option>
+          <option value="mistralai/mistral-7b-instruct">Mistral 7B (Very cheap, ~$0.10/1M tokens)</option>
+        </select>
+        <div class="help-text">Choose the AI model for generating email summaries</div>
+      </div>
+
+      <div class="form-group">
+        <label for="aiPrompt">AI Summary Prompt</label>
+        <textarea id="aiPrompt">Summarize this email in 5-10 words, focusing on the main action or topic:</textarea>
+        <div class="help-text">What should the AI answer about each email?</div>
+      </div>
+
+      <div class="form-group">
+        <label for="maxTokens">Max Response Tokens</label>
+        <input type="number" id="maxTokens" value="100" min="20" max="500">
+        <div class="help-text">Longer = more detailed but more expensive</div>
+      </div>
+    </div>
+
+    <!-- Processing Settings -->
+    <div class="section">
+      <div class="section-title">⚡ Processing Settings</div>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="batchSize">Batch Size (emails per run)</label>
+          <input type="number" id="batchSize" value="10" min="1" max="50">
+          <div class="help-text">How many emails to process at once</div>
+        </div>
+
+        <div class="form-group">
+          <label for="daysBack">Search Range (days back)</label>
+          <input type="number" id="daysBack" value="7" min="1" max="365">
+          <div class="help-text">How far back to search for emails</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="emailFilter">Gmail Search Filter (optional)</label>
+        <input type="text" id="emailFilter" placeholder="has:attachment from:example@company.com">
+        <div class="help-text">Use Gmail search syntax. Leave blank for default: has:attachment</div>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="newestFirst" checked>
+        <label for="newestFirst" class="checkbox-label">
+          Process newest emails first
+          <div class="help-text">Unchecked = oldest first</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-group">
+      <button type="button" class="btn-secondary" onclick="closePanel()">Cancel</button>
+      <button type="button" class="btn-primary" onclick="saveSettings()">💾 Save Configuration</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>Saving configuration...</div>
+    </div>
+  </div>
+
+  <script>
+    // Load current configuration when panel opens
+    window.onload = function() {
+      google.script.run
+        .withSuccessHandler(loadConfig)
+        .withFailureHandler(showError)
+        .getConfig();
+    };
+
+    function loadConfig(config) {
+      // API & Auth
+      document.getElementById('apiKey').value = config.apiKey || '';
+      document.getElementById('folderId').value = config.folderId || '';
+
+      // What to Save
+      document.getElementById('saveEmailBody').checked = config.saveEmailBody || false;
+      document.getElementById('emailFormat').value = config.emailFormat || 'pdf';
+      document.getElementById('saveAttachments').checked = config.saveAttachments !== false;
+
+      // File Naming
+      document.getElementById('fileNamingTemplate').value = config.fileNamingTemplate || '{{Year}}.{{Month}}.{{Day}}-{{AttachmentName}}';
+      document.getElementById('emailNamingTemplate').value = config.emailNamingTemplate || '{{Year}}-{{Month}}-{{Day}}_{{Subject}}';
+
+      // File Filtering
+      document.getElementById('minAttachmentSize').value = config.minAttachmentSizeKB || 5;
+      document.getElementById('maxAttachmentSize').value = config.maxAttachmentSizeMB || 0;
+      document.getElementById('allowedExtensions').value = config.allowedExtensions || '';
+      document.getElementById('disallowedExtensions').value = config.disallowedExtensions || '';
+
+      // AI Settings
+      document.getElementById('aiModel').value = config.model || 'anthropic/claude-3.5-sonnet';
+      document.getElementById('aiPrompt').value = config.summaryPrompt || 'Summarize this email in 5-10 words, focusing on the main action or topic:';
+      document.getElementById('maxTokens').value = config.maxTokens || 100;
+
+      // Processing
+      document.getElementById('batchSize').value = config.batchSize || 10;
+      document.getElementById('daysBack').value = config.daysBack || 7;
+      document.getElementById('emailFilter').value = config.emailFilter || '';
+      document.getElementById('newestFirst').checked = config.newestFirst !== false;
+
+      // Toggle email format visibility
+      toggleEmailFormatGroup();
+    }
+
+    function saveSettings() {
+      // Validate required fields
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const folderId = document.getElementById('folderId').value.trim();
+
+      if (!apiKey || !folderId) {
+        showError('Please fill in required fields: API Key and Drive Folder');
+        return;
+      }
+
+      // Collect all settings
+      const settings = {
+        // API & Auth
+        apiKey: apiKey,
+        folderId: folderId,
+
+        // What to Save
+        saveEmailBody: document.getElementById('saveEmailBody').checked,
+        emailFormat: document.getElementById('emailFormat').value,
+        saveAttachments: document.getElementById('saveAttachments').checked,
+
+        // File Naming
+        fileNamingTemplate: document.getElementById('fileNamingTemplate').value,
+        emailNamingTemplate: document.getElementById('emailNamingTemplate').value,
+
+        // File Filtering
+        minAttachmentSizeKB: parseInt(document.getElementById('minAttachmentSize').value),
+        maxAttachmentSizeMB: parseInt(document.getElementById('maxAttachmentSize').value),
+        allowedExtensions: document.getElementById('allowedExtensions').value,
+        disallowedExtensions: document.getElementById('disallowedExtensions').value,
+
+        // AI Settings
+        model: document.getElementById('aiModel').value,
+        summaryPrompt: document.getElementById('aiPrompt').value,
+        maxTokens: parseInt(document.getElementById('maxTokens').value),
+
+        // Processing
+        batchSize: parseInt(document.getElementById('batchSize').value),
+        daysBack: parseInt(document.getElementById('daysBack').value),
+        emailFilter: document.getElementById('emailFilter').value,
+        newestFirst: document.getElementById('newestFirst').checked
+      };
+
+      // Show loading
+      document.getElementById('loading').style.display = 'block';
+      document.querySelector('.button-group').style.display = 'none';
+
+      // Save to backend
+      google.script.run
+        .withSuccessHandler(onSaveSuccess)
+        .withFailureHandler(onSaveError)
+        .saveAllSettings(settings);
+    }
+
+    function onSaveSuccess() {
+      document.getElementById('loading').style.display = 'none';
+      showSuccess('✅ Configuration saved successfully!');
+
+      // Close panel after 2 seconds
+      setTimeout(function() {
+        google.script.host.close();
+      }, 2000);
+    }
+
+    function onSaveError(error) {
+      document.getElementById('loading').style.display = 'none';
+      document.querySelector('.button-group').style.display = 'flex';
+      showError('Error saving configuration: ' + error.message);
+    }
+
+    function showSuccess(message) {
+      const el = document.getElementById('successMessage');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(function() {
+        el.style.display = 'none';
+      }, 5000);
+    }
+
+    function showError(message) {
+      const el = document.getElementById('errorMessage');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(function() {
+        el.style.display = 'none';
+      }, 5000);
+    }
+
+    function closePanel() {
+      google.script.host.close();
+    }
+
+    // Toggle email format dropdown visibility
+    document.getElementById('saveEmailBody').addEventListener('change', toggleEmailFormatGroup);
+
+    function toggleEmailFormatGroup() {
+      const saveEmailBody = document.getElementById('saveEmailBody').checked;
+      document.getElementById('emailFormatGroup').style.display = saveEmailBody ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>
