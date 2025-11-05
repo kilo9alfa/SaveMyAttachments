@@ -53,7 +53,20 @@ function addToSheet(data) {
     // Insert after header row
     sheet.insertRowAfter(1);
     targetRow = 2;
-    sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+
+    // Get the range for the new row
+    var dataRange = sheet.getRange(targetRow, 1, 1, rowData.length);
+
+    // CLEAR inherited header formatting (bold, blue background, white text)
+    dataRange.clearFormat();
+
+    // Set data values
+    dataRange.setValues([rowData]);
+
+    // Apply DATA ROW formatting (normal text, white background, black text)
+    dataRange.setFontWeight('normal');
+    dataRange.setBackground('#ffffff');
+    dataRange.setFontColor('#000000');
   } else {
     // Append at bottom (original behavior)
     sheet.appendRow(rowData);

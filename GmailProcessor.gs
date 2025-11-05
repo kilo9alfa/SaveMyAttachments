@@ -277,20 +277,44 @@ function processEmail(message, config) {
     }
 
     // 4. ADD ROWS TO SHEET (one row per saved file)
-    for (var i = 0; i < allSavedFiles.length; i++) {
-      var file = allSavedFiles[i];
+    // If inserting at top (newestFirst), add files in REVERSE order
+    // so they end up in correct order after being pushed down
+    var insertAtTop = config.newestFirst || true;
 
-      addToSheet({
-        messageId: messageId,
-        timestamp: emailData.date,
-        sender: emailData.from,
-        subject: emailData.subject,
-        summary: summary,
-        attachmentName: file.name,
-        attachmentUrl: file.url
-      });
+    if (insertAtTop) {
+      // Reverse order: last file first, so it ends up at bottom of email's files
+      for (var i = allSavedFiles.length - 1; i >= 0; i--) {
+        var file = allSavedFiles[i];
 
-      Logger.log('  ✅ Added row for: ' + file.name + ' (' + file.type + ')');
+        addToSheet({
+          messageId: messageId,
+          timestamp: emailData.date,
+          sender: emailData.from,
+          subject: emailData.subject,
+          summary: summary,
+          attachmentName: file.name,
+          attachmentUrl: file.url
+        });
+
+        Logger.log('  ✅ Added row for: ' + file.name + ' (' + file.type + ')');
+      }
+    } else {
+      // Normal order when appending at bottom
+      for (var i = 0; i < allSavedFiles.length; i++) {
+        var file = allSavedFiles[i];
+
+        addToSheet({
+          messageId: messageId,
+          timestamp: emailData.date,
+          sender: emailData.from,
+          subject: emailData.subject,
+          summary: summary,
+          attachmentName: file.name,
+          attachmentUrl: file.url
+        });
+
+        Logger.log('  ✅ Added row for: ' + file.name + ' (' + file.type + ')');
+      }
     }
 
     return {
