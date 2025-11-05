@@ -75,8 +75,8 @@ function addToSheet(data) {
 
   var lastRow = targetRow;
 
-  // Format the date column (column 2)
-  sheet.getRange(lastRow, 2).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  // Format the date column (column 2) - yyyy.mm.dd hh:mm (no seconds)
+  sheet.getRange(lastRow, 2).setNumberFormat('yyyy.mm.dd hh:mm');
 
   // Add attachment as clickable link (column 5 - moved before AI Summary)
   if (data.attachmentName && data.attachmentUrl) {

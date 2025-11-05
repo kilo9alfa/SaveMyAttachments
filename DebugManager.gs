@@ -4,6 +4,114 @@
  */
 
 /**
+ * Export full logs to a text file in Drive
+ * Returns shareable link
+ */
+function exportLogsToDrive() {
+  var config = getConfig();
+
+  if (!config.folderId) {
+    throw new Error('Drive folder not configured. Please set up Drive folder in settings first.');
+  }
+
+  var folder = DriveApp.getFolderById(config.folderId);
+
+  // Get current timestamp
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss');
+  var fileName = 'SaveMe_Logs_' + timestamp + '.txt';
+
+  // Build log content
+  var logContent = '='.repeat(80) + '\n';
+  logContent += 'SAVEME DEBUG LOGS\n';
+  logContent += 'Generated: ' + new Date().toString() + '\n';
+  logContent += '='.repeat(80) + '\n\n';
+
+  // Add configuration
+  logContent += '--- CONFIGURATION ---\n';
+  logContent += JSON.stringify(config, null, 2) + '\n\n';
+
+  // Add diagnostics
+  logContent += '--- DIAGNOSTICS ---\n';
+  var diagnostics = getDiagnosticsData();
+  logContent += JSON.stringify(diagnostics, null, 2) + '\n\n';
+
+  // Add recent Apps Script logs (if available from Logger)
+  logContent += '--- RECENT EXECUTION LOGS ---\n';
+  logContent += 'Note: Full execution logs are in Apps Script editor (View → Logs)\n';
+  logContent += 'Run Process New Emails, then immediately run this export to capture logs.\n\n';
+
+  // Add processed emails list
+  logContent += '--- RECENTLY PROCESSED EMAILS ---\n';
+  var recentlyProcessed = getRecentlyProcessed(20);
+  if (recentlyProcessed.length > 0) {
+    for (var i = 0; i < recentlyProcessed.length; i++) {
+      var item = recentlyProcessed[i];
+      var date = new Date(item.date);
+      logContent += date.toISOString() + ' | ' + item.subject + ' | ' + item.id + '\n';
+    }
+  } else {
+    logContent += 'No processed emails in tracking.\n';
+  }
+  logContent += '\n';
+
+  // Add sheet contents
+  logContent += '--- SHEET CONTENTS (First 10 rows) ---\n';
+  var sheet = getCurrentSheet();
+  if (sheet.getLastRow() > 0) {
+    var data = sheet.getRange(1, 1, Math.min(sheet.getLastRow(), 10), sheet.getLastColumn()).getValues();
+    for (var i = 0; i < data.length; i++) {
+      logContent += 'Row ' + (i + 1) + ': ' + JSON.stringify(data[i]) + '\n';
+    }
+  } else {
+    logContent += 'Sheet is empty.\n';
+  }
+  logContent += '\n';
+
+  logContent += '='.repeat(80) + '\n';
+  logContent += 'END OF LOG FILE\n';
+  logContent += '='.repeat(80) + '\n';
+
+  // Create file in Drive
+  var file = folder.createFile(fileName, logContent, MimeType.PLAIN_TEXT);
+
+  // Make it shareable (anyone with link can view)
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  var url = file.getUrl();
+
+  Logger.log('Logs exported to: ' + url);
+
+  return {
+    success: true,
+    url: url,
+    fileName: fileName
+  };
+}
+
+/**
+ * UI function to export logs
+ */
+function exportLogsUI() {
+  var ui = SpreadsheetApp.getUi();
+
+  try {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Exporting logs to Drive...', 'SaveMe', 5);
+
+    var result = exportLogsToDrive();
+
+    ui.alert('Logs Exported!',
+      '✅ Logs saved to Drive\n\n' +
+      'File: ' + result.fileName + '\n\n' +
+      '📎 Shareable link:\n' + result.url + '\n\n' +
+      'You can now share this link with support or debugging.',
+      ui.ButtonSet.OK);
+
+  } catch (e) {
+    ui.alert('Error', 'Failed to export logs: ' + e.message, ui.ButtonSet.OK);
+  }
+}
+
+/**
  * Show exactly what Gmail search is being used
  */
 function showSearchQuery() {
