@@ -261,10 +261,19 @@ function processEmail(message, config) {
       };
     }
 
-    // 3. GENERATE AI SUMMARY (once for the email)
-    var summary = '[No AI summary]';
-    if (config.apiKey) {
+    // 3. GENERATE AI SUMMARY (once for the email, if enabled)
+    var summary = '';
+    if (config.enableAI && config.apiKey && emailData.body && emailData.body.trim().length > 0) {
+      Logger.log('  🤖 Generating AI summary...');
       summary = generateSummary(emailData.body, config.apiKey, config.model, config.summaryPrompt);
+    } else {
+      if (!config.enableAI) {
+        Logger.log('  ⚠️ AI summary disabled in settings');
+      } else if (!config.apiKey) {
+        Logger.log('  ⚠️ No API key configured');
+      } else if (!emailData.body || emailData.body.trim().length === 0) {
+        Logger.log('  ⚠️ Email has no body, skipping AI summary');
+      }
     }
 
     // 4. ADD ROWS TO SHEET (one row per saved file)

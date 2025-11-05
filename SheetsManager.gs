@@ -14,7 +14,7 @@ function addToSheet(data) {
 
   // Ensure headers exist (with Message ID as first hidden column)
   if (sheet.getLastRow() === 0) {
-    var headers = ['Message ID', 'Date', 'Sender', 'Subject', 'AI Summary', 'Attachment'];
+    var headers = ['Message ID', 'Date', 'Sender', 'Subject', 'Attachment', 'AI Summary'];
     sheet.appendRow(headers);
 
     // Format header row
@@ -29,17 +29,18 @@ function addToSheet(data) {
     // Freeze header row
     sheet.setFrozenRows(1);
 
-    Logger.log('Created header row (one attachment per row)');
+    Logger.log('Created header row (AI Summary is now last column)');
   }
 
   // Add data row (one row per attachment)
+  // NEW ORDER: Message ID, Date, Sender, Subject, Attachment, AI Summary
   var rowData = [
     data.messageId || '',
     data.timestamp,
     data.sender,
     data.subject,
-    data.summary,
-    '' // We'll add the attachment link with formula below
+    '', // Attachment link (added below with formula)
+    data.summary || '' // AI Summary (last column, may be empty)
   ];
 
   // Insert at row 2 (after headers) to keep newest at top
@@ -64,9 +65,9 @@ function addToSheet(data) {
   // Format the date column (column 2)
   sheet.getRange(lastRow, 2).setNumberFormat('yyyy-mm-dd hh:mm:ss');
 
-  // Add attachment as clickable link (column 6)
+  // Add attachment as clickable link (column 5 - moved before AI Summary)
   if (data.attachmentName && data.attachmentUrl) {
-    var attachmentCell = sheet.getRange(lastRow, 6);
+    var attachmentCell = sheet.getRange(lastRow, 5);
 
     // Use HYPERLINK formula for clean clickable filename
     attachmentCell.setFormula('=HYPERLINK("' + data.attachmentUrl + '", "' + data.attachmentName + '")');

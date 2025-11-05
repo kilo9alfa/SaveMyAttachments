@@ -37,6 +37,7 @@ function getConfig() {
     daysBack: parseInt(userProperties.getProperty('DAYS_BACK') || '7'),
 
     // AI settings
+    enableAI: userProperties.getProperty('ENABLE_AI') !== 'false', // Default true
     summaryPrompt: userProperties.getProperty('SUMMARY_PROMPT') || 'Summarize this email in 5-10 words, focusing on the main action or topic:',
     newestFirst: userProperties.getProperty('NEWEST_FIRST') !== 'false', // Default true
 

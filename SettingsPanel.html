@@ -355,31 +355,41 @@
     <div class="section">
       <div class="section-title">🤖 AI Summarization</div>
 
-      <div class="form-group">
-        <label for="aiModel">AI Model</label>
-        <select id="aiModel">
-          <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Best quality, ~$3/1M tokens)</option>
-          <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & cheap, ~$0.25/1M tokens)</option>
-          <option value="anthropic/claude-3-opus">Claude 3 Opus (Highest quality, ~$15/1M tokens)</option>
-          <option value="openai/gpt-4-turbo">GPT-4 Turbo (High quality, ~$10/1M tokens)</option>
-          <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo (Cheap, ~$0.50/1M tokens)</option>
-          <option value="google/gemini-pro">Gemini Pro (Free tier available)</option>
-          <option value="meta-llama/llama-3-70b-instruct">Llama 3 70B (~$0.70/1M tokens)</option>
-          <option value="mistralai/mistral-7b-instruct">Mistral 7B (Very cheap, ~$0.10/1M tokens)</option>
-        </select>
-        <div class="help-text">Choose the AI model for generating email summaries</div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="enableAI" checked>
+        <label for="enableAI" class="checkbox-label">
+          Enable AI-powered email summaries
+          <div class="help-text">Uses OpenRouter.ai to generate intelligent summaries of email content</div>
+        </label>
       </div>
 
-      <div class="form-group">
-        <label for="aiPrompt">AI Summary Prompt</label>
-        <textarea id="aiPrompt">Summarize this email in 5-10 words, focusing on the main action or topic:</textarea>
-        <div class="help-text">What should the AI answer about each email?</div>
-      </div>
+      <div id="aiSettingsGroup">
+        <div class="form-group">
+          <label for="aiModel">AI Model</label>
+          <select id="aiModel">
+            <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Best quality, ~$3/1M tokens)</option>
+            <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & cheap, ~$0.25/1M tokens)</option>
+            <option value="anthropic/claude-3-opus">Claude 3 Opus (Highest quality, ~$15/1M tokens)</option>
+            <option value="openai/gpt-4-turbo">GPT-4 Turbo (High quality, ~$10/1M tokens)</option>
+            <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo (Cheap, ~$0.50/1M tokens)</option>
+            <option value="google/gemini-pro">Gemini Pro (Free tier available)</option>
+            <option value="meta-llama/llama-3-70b-instruct">Llama 3 70B (~$0.70/1M tokens)</option>
+            <option value="mistralai/mistral-7b-instruct">Mistral 7B (Very cheap, ~$0.10/1M tokens)</option>
+          </select>
+          <div class="help-text">Choose the AI model for generating email summaries</div>
+        </div>
 
-      <div class="form-group">
-        <label for="maxTokens">Max Response Tokens</label>
-        <input type="number" id="maxTokens" value="100" min="20" max="500">
-        <div class="help-text">Longer = more detailed but more expensive</div>
+        <div class="form-group">
+          <label for="aiPrompt">AI Summary Prompt</label>
+          <textarea id="aiPrompt">Summarize this email in 5-10 words, focusing on the main action or topic:</textarea>
+          <div class="help-text">What should the AI answer about each email?</div>
+        </div>
+
+        <div class="form-group">
+          <label for="maxTokens">Max Response Tokens</label>
+          <input type="number" id="maxTokens" value="100" min="20" max="500">
+          <div class="help-text">Longer = more detailed but more expensive</div>
+        </div>
       </div>
     </div>
 
@@ -458,6 +468,7 @@
       document.getElementById('disallowedExtensions').value = config.disallowedExtensions || '';
 
       // AI Settings
+      document.getElementById('enableAI').checked = config.enableAI !== false; // Default true
       document.getElementById('aiModel').value = config.model || 'anthropic/claude-3.5-sonnet';
       document.getElementById('aiPrompt').value = config.summaryPrompt || 'Summarize this email in 5-10 words, focusing on the main action or topic:';
       document.getElementById('maxTokens').value = config.maxTokens || 100;
@@ -468,17 +479,25 @@
       document.getElementById('emailFilter').value = config.emailFilter || '';
       document.getElementById('newestFirst').checked = config.newestFirst !== false;
 
-      // Toggle email format visibility
+      // Toggle visibility based on checkboxes
       toggleEmailFormatGroup();
+      toggleAISettingsGroup();
     }
 
     function saveSettings() {
       // Validate required fields
       const apiKey = document.getElementById('apiKey').value.trim();
       const folderId = document.getElementById('folderId').value.trim();
+      const enableAI = document.getElementById('enableAI').checked;
 
-      if (!apiKey || !folderId) {
-        showError('Please fill in required fields: API Key and Drive Folder');
+      // API key is only required if AI is enabled
+      if (enableAI && !apiKey) {
+        showError('OpenRouter API Key is required when AI summarization is enabled');
+        return;
+      }
+
+      if (!folderId) {
+        showError('Google Drive Folder is required');
         return;
       }
 
@@ -504,6 +523,7 @@
         disallowedExtensions: document.getElementById('disallowedExtensions').value,
 
         // AI Settings
+        enableAI: enableAI,
         model: document.getElementById('aiModel').value,
         summaryPrompt: document.getElementById('aiPrompt').value,
         maxTokens: parseInt(document.getElementById('maxTokens').value),
@@ -570,6 +590,14 @@
     function toggleEmailFormatGroup() {
       const saveEmailBody = document.getElementById('saveEmailBody').checked;
       document.getElementById('emailFormatGroup').style.display = saveEmailBody ? 'block' : 'none';
+    }
+
+    // Toggle AI settings visibility
+    document.getElementById('enableAI').addEventListener('change', toggleAISettingsGroup);
+
+    function toggleAISettingsGroup() {
+      const enableAI = document.getElementById('enableAI').checked;
+      document.getElementById('aiSettingsGroup').style.display = enableAI ? 'block' : 'none';
     }
   </script>
 </body>

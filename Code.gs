@@ -128,6 +128,7 @@ function saveAllSettings(settings) {
       'DISALLOWED_EXTENSIONS': settings.disallowedExtensions,
 
       // AI Settings
+      'ENABLE_AI': settings.enableAI.toString(),
       'MODEL': settings.model,
       'SUMMARY_PROMPT': settings.summaryPrompt,
       'MAX_TOKENS': settings.maxTokens.toString(),
