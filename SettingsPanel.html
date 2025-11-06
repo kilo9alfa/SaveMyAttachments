@@ -672,6 +672,14 @@
     // Create new Drive folder
     function createNewDriveFolder() {
       const button = event.target;
+
+      // Ask for folder name
+      const folderName = prompt('Enter folder name:', 'SaveMe Attachments');
+
+      if (!folderName) {
+        return; // User cancelled
+      }
+
       button.disabled = true;
       button.textContent = 'Creating...';
 
@@ -687,7 +695,7 @@
           button.disabled = false;
           button.textContent = '📁 Create New Folder';
         })
-        .createNewFolderForSettings();
+        .createNewFolderForSettings(folderName.trim());
     }
   </script>
 </body>

@@ -160,19 +160,39 @@ function saveAllSettings(settings) {
 /**
  * Create new folder for settings panel
  * Returns folder ID and name (no UI alerts)
+ *
+ * @param {string} baseName - Base folder name (defaults to "SaveMe Attachments")
  */
-function createNewFolderForSettings() {
+function createNewFolderForSettings(baseName) {
   try {
-    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    var folderName = 'SaveMe Attachments ' + timestamp;
-    var folder = DriveApp.createFolder(folderName);
+    baseName = baseName || 'SaveMe Attachments';
+    var finalName = baseName;
+
+    // Check if base name exists
+    if (folderExists(baseName)) {
+      // Try adding date
+      var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      finalName = baseName + ' ' + timestamp;
+
+      // If date version exists, try adding -1, -2, etc.
+      if (folderExists(finalName)) {
+        var counter = 1;
+        while (folderExists(finalName + '-' + counter) && counter < 100) {
+          counter++;
+        }
+        finalName = finalName + '-' + counter;
+      }
+    }
+
+    // Create the folder
+    var folder = DriveApp.createFolder(finalName);
     var folderId = folder.getId();
 
-    Logger.log('Created new folder: ' + folderName + ' (ID: ' + folderId + ')');
+    Logger.log('Created new folder: ' + finalName + ' (ID: ' + folderId + ')');
 
     return {
       folderId: folderId,
-      folderName: folderName,
+      folderName: finalName,
       folderUrl: folder.getUrl()
     };
 
@@ -180,6 +200,17 @@ function createNewFolderForSettings() {
     Logger.log('Error creating folder: ' + e.toString());
     throw new Error('Failed to create folder: ' + e.message);
   }
+}
+
+/**
+ * Check if a folder with the given name exists in Drive (root level)
+ *
+ * @param {string} folderName - Folder name to check
+ * @return {boolean} True if folder exists
+ */
+function folderExists(folderName) {
+  var folders = DriveApp.getFoldersByName(folderName);
+  return folders.hasNext();
 }
 
 /**
