@@ -8,7 +8,7 @@
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('SaveMe')
+  ui.createMenu('SaveMyAttachments')
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addSeparator()
     .addItem('📧 Process New Emails Now', 'processNewEmailsManual')
@@ -35,7 +35,7 @@ function onOpen() {
 function processTestEmail() {
   try {
     // Show processing message
-    SpreadsheetApp.getActiveSpreadsheet().toast('Processing most recent email with attachment...', 'SaveMe', 5);
+    SpreadsheetApp.getActiveSpreadsheet().toast('Processing most recent email with attachment...', 'SaveMyAttachments', 5);
 
     // Get configuration
     var config = getConfig();
@@ -78,9 +78,9 @@ function showSettings() {
   var html = HtmlService.createHtmlOutputFromFile('SettingsPanel')
     .setWidth(750)
     .setHeight(650)
-    .setTitle('SaveMe Configuration');
+    .setTitle('SaveMyAttachments Configuration');
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'SaveMe Configuration');
+  SpreadsheetApp.getUi().showModalDialog(html, 'SaveMyAttachments Configuration');
 }
 
 /**
@@ -165,7 +165,7 @@ function saveAllSettings(settings) {
  */
 function createNewFolderForSettings(baseName) {
   try {
-    baseName = baseName || 'SaveMe Attachments';
+    baseName = baseName || 'Save My Attachments';
     var finalName = baseName;
 
     // Check if base name exists
@@ -221,15 +221,15 @@ function createNewFolder() {
   var ui = SpreadsheetApp.getUi();
 
   var response = ui.alert(
-    'Create SaveMe Folder',
-    'Do you want to create a new "SaveMe Attachments" folder in your Drive?\n\n' +
+    'Create SaveMyAttachments Folder',
+    'Do you want to create a new "Save My Attachments" folder in your Drive?\n\n' +
     'This will be created in the root of "My Drive".',
     ui.ButtonSet.YES_NO
   );
 
   if (response == ui.Button.YES) {
     try {
-      var folder = DriveApp.createFolder('SaveMe Attachments');
+      var folder = DriveApp.createFolder('Save My Attachments');
       var folderId = folder.getId();
       var folderUrl = folder.getUrl();
 
@@ -237,7 +237,7 @@ function createNewFolder() {
 
       ui.alert('Success!',
         'Created folder successfully!\n\n' +
-        'Folder: SaveMe Attachments\n' +
+        'Folder: Save My Attachments\n' +
         'Location: My Drive\n\n' +
         'View it at: ' + folderUrl,
         ui.ButtonSet.OK);
@@ -260,7 +260,7 @@ function testOpenRouter() {
       return;
     }
 
-    SpreadsheetApp.getActiveSpreadsheet().toast('Testing OpenRouter connection...', 'SaveMe', 3);
+    SpreadsheetApp.getActiveSpreadsheet().toast('Testing OpenRouter connection...', 'SaveMyAttachments', 3);
 
     var testSummary = generateSummary('This is a test email about a project meeting scheduled for tomorrow at 2pm.', config.apiKey, 'anthropic/claude-3.5-sonnet');
 
@@ -294,7 +294,7 @@ function processNewEmailsManual() {
     return;
   }
 
-  SpreadsheetApp.getActiveSpreadsheet().toast('Processing new emails...', 'SaveMe', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Processing new emails...', 'SaveMyAttachments', 5);
 
   try {
     var stats = processNewEmails(config);
@@ -374,7 +374,7 @@ function startAutomationUI() {
   try {
     setupAutomation(interval);
     ui.alert('Automation Started!',
-      'SaveMe will now automatically check for new emails every ' + interval + ' minutes.\n\n' +
+      'SaveMyAttachments will now automatically check for new emails every ' + interval + ' minutes.\n\n' +
       'You can stop automation anytime from the Automation menu.',
       ui.ButtonSet.OK);
   } catch (e) {
@@ -417,7 +417,7 @@ function showAutomationStatus() {
 
   message += 'Total emails processed: ' + processedCount;
 
-  ui.alert('SaveMe Status', message, ui.ButtonSet.OK);
+  ui.alert('SaveMyAttachments Status', message, ui.ButtonSet.OK);
 }
 
 /**
@@ -428,7 +428,7 @@ function showProcessedCount() {
   var count = getProcessedCount();
 
   ui.alert('Processed Emails',
-    'SaveMe has processed ' + count + ' emails so far.\n\n' +
+    'SaveMyAttachments has processed ' + count + ' emails so far.\n\n' +
     'These emails will be skipped in future processing runs.',
     ui.ButtonSet.OK);
 }
@@ -559,7 +559,7 @@ function showDiagnostics() {
   message += '- Properties tracked: ' + processed.length + '\n';
   message += '- Cache keys: ' + trackedCacheKeys.length;
 
-  ui.alert('SaveMe Diagnostics', message, ui.ButtonSet.OK);
+  ui.alert('SaveMyAttachments Diagnostics', message, ui.ButtonSet.OK);
 }
 
 /**
@@ -763,7 +763,7 @@ function setBatchSize() {
     saveConfig('BATCH_SIZE', size.toString());
     ui.alert('Saved',
       'Batch size set to ' + size + ' emails per run.\n\n' +
-      'SaveMe will now process up to ' + size + ' emails each time.',
+      'SaveMyAttachments will now process up to ' + size + ' emails each time.',
       ui.ButtonSet.OK);
   }
 }
@@ -926,7 +926,7 @@ function setDaysBack() {
     saveConfig('DAYS_BACK', days.toString());
     ui.alert('Saved',
       'Date range set to ' + days + ' days back.\n\n' +
-      'SaveMe will now search emails from the last ' + days + ' days.\n\n' +
+      'SaveMyAttachments will now search emails from the last ' + days + ' days.\n\n' +
       'Run "Process New Emails Now" to process older emails.',
       ui.ButtonSet.OK);
   }
