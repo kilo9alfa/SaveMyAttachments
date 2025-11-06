@@ -5,9 +5,71 @@ A Google Workspace Add-on that automatically processes incoming emails, saves at
 ## Project Overview
 
 **Type:** Google Apps Script Add-on
-**Status:** Planning Phase
+**Status:** Active Development
 **Target Platform:** Google Workspace Marketplace
 **AI Provider:** OpenRouter.ai (user brings their own API key)
+
+## ⚠️ Important: Safety Features & Limitations
+
+See [LIMITATIONS.md](LIMITATIONS.md) for user-facing documentation.
+
+### Built-in Safety Features (Implemented)
+
+1. **Execution Time Monitoring** (GmailProcessor.gs:15-17, 55-62, 77-84)
+   - Monitors execution time continuously
+   - Stops gracefully at 5 minutes (before 6-min limit)
+   - Prevents data loss from sudden timeout
+   - Returns `stats.stoppedEarly = true` for UI display
+
+2. **Properties Service Auto-Cleanup** (EmailTracker.gs:73-90)
+   - Automatically removes oldest entries when >5000 messages tracked
+   - Warns when approaching 9KB property size limit
+   - Prevents hitting Properties Service limits
+   - Logs cleanup actions for transparency
+
+3. **Progress Tracking** (EmailTracker.gs:106-144, Code.gs:432-477)
+   - Estimates total emails in date range
+   - Calculates percent complete
+   - Estimates runs needed and time to completion
+   - UI: Menu → Tools → View Progress
+
+4. **Quota Error Detection** (GmailProcessor.gs:164-189)
+   - Detects Gmail API quota errors
+   - Detects execution timeouts
+   - Provides helpful error messages
+   - Sets `stats.stoppedReason` with specific error
+
+5. **OpenRouter Error Handling** (OpenRouterService.gs:51-68, 76-88)
+   - Detects rate limits (429)
+   - Detects invalid API key (401)
+   - Detects insufficient credits (402)
+   - Detects network/timeout errors
+   - Returns descriptive error messages
+
+### Google Apps Script Limits
+
+| Limit | Value | Impact |
+|-------|-------|--------|
+| Execution Time | 6 minutes max | Can process ~50-100 emails per run |
+| Properties Service (per property) | 9KB | ~5000-7000 message IDs |
+| Properties Service (total) | 500KB | All settings + tracking |
+| Gmail API Quota | Generous | Thousands of operations per day |
+| URL Fetch calls | 20,000/day | OpenRouter API calls |
+
+### Large-Scale Processing Strategy
+
+**For 2000+ emails:**
+1. Enable automation (every 15 minutes)
+2. Let run for 1-2 days in background
+3. Use "View Progress" to monitor
+4. System handles execution time limits automatically
+5. Auto-cleanup manages Properties Service limits
+
+**Automation handles:**
+- Batch processing (10-20 emails per run)
+- Execution time limit (stops at 5 min, continues next run)
+- Properties cleanup (auto-removes oldest entries)
+- Error recovery (skips quota errors, continues next run)
 
 ### Core Functionality
 

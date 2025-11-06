@@ -70,12 +70,24 @@ function markEmailAsProcessed(messageId, subject) {
     date: Date.now()
   });
 
-  // Keep only last 1000 messages (prevent property size limits)
-  if (processed.length > 1000) {
-    processed = processed.slice(-1000);
+  // Auto-cleanup: Keep only last 5000 messages to avoid quota issues
+  // Properties Service has 9KB per property limit (~5000-7000 message IDs)
+  var MAX_TRACKED_MESSAGES = 5000;
+  if (processed.length > MAX_TRACKED_MESSAGES) {
+    var removed = processed.length - MAX_TRACKED_MESSAGES;
+    processed = processed.slice(-MAX_TRACKED_MESSAGES);
+    Logger.log('⚠️ Auto-cleanup: Removed ' + removed + ' oldest entries (keeping last ' + MAX_TRACKED_MESSAGES + ')');
   }
 
   props.setProperty('PROCESSED_MESSAGES_V2', JSON.stringify(processed));
+
+  // Check property size and warn if approaching limit
+  var propertySize = JSON.stringify(processed).length;
+  var MAX_PROPERTY_SIZE = 9000; // 9KB limit per property
+  if (propertySize > MAX_PROPERTY_SIZE * 0.8) {
+    Logger.log('⚠️ WARNING: PROCESSED_MESSAGES_V2 is ' + Math.round(propertySize / 1024) + 'KB (80% of 9KB limit)');
+    Logger.log('   Consider running "Clear Processed Tracking" if needed');
+  }
 
   Logger.log('Marked as processed V2: ' + messageId + ' - ' + subject);
 }
@@ -89,6 +101,46 @@ function getProcessedCount() {
   var props = PropertiesService.getUserProperties();
   var processed = JSON.parse(props.getProperty('PROCESSED_MESSAGES_V2') || '[]');
   return processed.length;
+}
+
+/**
+ * Get progress statistics for large-scale processing
+ *
+ * @return {Object} Progress stats
+ */
+function getProgressStats() {
+  var props = PropertiesService.getUserProperties();
+  var config = getConfig();
+
+  // Get processed count
+  var processedCount = getProcessedCount();
+
+  // Estimate total emails in range (this is an approximation)
+  var query = buildSearchQuery(config);
+  var totalThreads = 0;
+  var totalEstimatedEmails = 0;
+
+  try {
+    // Quick search to get thread count (not all messages)
+    var threads = GmailApp.search(query, 0, 500); // Max 500 for estimation
+    totalThreads = threads.length;
+
+    // Rough estimate: 1.2 messages per thread on average
+    totalEstimatedEmails = Math.round(totalThreads * 1.2);
+  } catch (e) {
+    Logger.log('Error estimating progress: ' + e.toString());
+  }
+
+  var remainingEstimate = Math.max(0, totalEstimatedEmails - processedCount);
+  var percentComplete = totalEstimatedEmails > 0 ? Math.round((processedCount / totalEstimatedEmails) * 100) : 0;
+
+  return {
+    processed: processedCount,
+    estimatedTotal: totalEstimatedEmails,
+    estimatedRemaining: remainingEstimate,
+    percentComplete: percentComplete,
+    threadsFound: totalThreads
+  };
 }
 
 /**

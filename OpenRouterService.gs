@@ -51,7 +51,20 @@ function generateSummary(emailContent, apiKey, model, customPrompt) {
     if (responseCode !== 200) {
       var errorText = response.getContentText();
       Logger.log('OpenRouter API Error: ' + errorText);
-      return '[Summary failed - API Error: ' + responseCode + ']';
+
+      // Check for specific error types
+      if (responseCode === 429) {
+        Logger.log('⚠️ OpenRouter rate limit exceeded');
+        return '[Summary failed - Rate limit exceeded]';
+      } else if (responseCode === 401) {
+        Logger.log('⚠️ OpenRouter API key invalid');
+        return '[Summary failed - Invalid API key]';
+      } else if (responseCode === 402) {
+        Logger.log('⚠️ OpenRouter insufficient credits');
+        return '[Summary failed - Insufficient credits]';
+      } else {
+        return '[Summary failed - API Error: ' + responseCode + ']';
+      }
     }
 
     var result = JSON.parse(response.getContentText());
@@ -61,8 +74,17 @@ function generateSummary(emailContent, apiKey, model, customPrompt) {
     return summary;
 
   } catch (e) {
-    Logger.log('OpenRouter API Exception: ' + e.toString());
-    return '[Summary failed - ' + e.message + ']';
+    var errorMsg = e.toString();
+    Logger.log('OpenRouter API Exception: ' + errorMsg);
+
+    // Provide helpful error messages
+    if (errorMsg.indexOf('DNS') !== -1 || errorMsg.indexOf('network') !== -1) {
+      return '[Summary failed - Network error]';
+    } else if (errorMsg.indexOf('timeout') !== -1) {
+      return '[Summary failed - Request timeout]';
+    } else {
+      return '[Summary failed - ' + e.message + ']';
+    }
   }
 }
 

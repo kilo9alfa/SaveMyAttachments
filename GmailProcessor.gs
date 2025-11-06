@@ -12,12 +12,18 @@
 function processNewEmails(config) {
   config = config || getConfig();
 
+  // Track execution time (Apps Script has 6-minute limit)
+  var startTime = new Date().getTime();
+  var MAX_EXECUTION_TIME = 5 * 60 * 1000; // 5 minutes (leave 1 min buffer)
+
   var stats = {
     found: 0,
     processed: 0,
     skipped: 0,
     errors: 0,
-    errorMessages: []
+    errorMessages: [],
+    stoppedEarly: false,
+    stoppedReason: null
   };
 
   try {
@@ -46,6 +52,15 @@ function processNewEmails(config) {
 
     // Process each thread
     for (var i = 0; i < threads.length; i++) {
+      // Check execution time (stop gracefully before timeout)
+      var elapsedTime = new Date().getTime() - startTime;
+      if (elapsedTime > MAX_EXECUTION_TIME) {
+        Logger.log('⏱️ Execution time limit approaching (' + Math.round(elapsedTime / 1000) + 's), stopping gracefully');
+        stats.stoppedEarly = true;
+        stats.stoppedReason = 'Execution time limit (5 minutes)';
+        break;
+      }
+
       // Stop if we've reached the batch limit
       if (processedCount >= maxEmails) {
         Logger.log('Reached batch limit of ' + maxEmails + ' emails, stopping');
@@ -59,6 +74,15 @@ function processNewEmails(config) {
       messages.reverse();
 
       for (var j = 0; j < messages.length; j++) {
+        // Check execution time in inner loop too
+        var elapsedTime = new Date().getTime() - startTime;
+        if (elapsedTime > MAX_EXECUTION_TIME) {
+          Logger.log('⏱️ Time limit reached in message processing');
+          stats.stoppedEarly = true;
+          stats.stoppedReason = 'Execution time limit (5 minutes)';
+          break;
+        }
+
         // Stop if we've reached the batch limit
         if (processedCount >= maxEmails) {
           break;
@@ -115,11 +139,19 @@ function processNewEmails(config) {
       }
     }
 
+    var totalTime = Math.round((new Date().getTime() - startTime) / 1000);
+
     Logger.log('=== PROCESSING COMPLETE ===');
+    Logger.log('Total execution time: ' + totalTime + ' seconds');
     Logger.log('Found: ' + stats.found + ' emails in Gmail search');
     Logger.log('Processed: ' + stats.processed + ' emails');
     Logger.log('Skipped: ' + stats.skipped + ' emails (already processed or in sheet)');
     Logger.log('Errors: ' + stats.errors + ' emails');
+
+    if (stats.stoppedEarly) {
+      Logger.log('⚠️ STOPPED EARLY: ' + stats.stoppedReason);
+      Logger.log('   Run again to continue processing remaining emails');
+    }
 
     if (stats.found === 0) {
       Logger.log('⚠️ No emails found - check your Gmail search query and date range');
@@ -131,8 +163,27 @@ function processNewEmails(config) {
 
   } catch (e) {
     Logger.log('Error in processNewEmails: ' + e.toString());
-    stats.errors++;
-    stats.errorMessages.push('Fatal error: ' + e.message);
+
+    // Check for specific quota/limit errors
+    var errorMsg = e.toString();
+
+    if (errorMsg.indexOf('quota') !== -1 || errorMsg.indexOf('limit') !== -1 || errorMsg.indexOf('rate') !== -1) {
+      Logger.log('⚠️ QUOTA/RATE LIMIT ERROR DETECTED');
+      stats.errors++;
+      stats.errorMessages.push('Gmail API quota exceeded. Wait 24 hours or reduce batch size.');
+      stats.stoppedEarly = true;
+      stats.stoppedReason = 'Gmail API quota exceeded';
+    } else if (errorMsg.indexOf('timeout') !== -1 || errorMsg.indexOf('Exceeded maximum execution time') !== -1) {
+      Logger.log('⏱️ EXECUTION TIMEOUT');
+      stats.errors++;
+      stats.errorMessages.push('Execution timeout. Reduce batch size.');
+      stats.stoppedEarly = true;
+      stats.stoppedReason = 'Execution timeout (> 6 minutes)';
+    } else {
+      stats.errors++;
+      stats.errorMessages.push('Fatal error: ' + e.message);
+    }
+
     return stats;
   }
 }

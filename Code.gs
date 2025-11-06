@@ -13,6 +13,7 @@ function onOpen() {
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addSeparator()
     .addSubMenu(ui.createMenu('🔧 Tools')
+      .addItem('📊 View Progress', 'showProgress')
       .addItem('View Diagnostics', 'showDiagnostics')
       .addItem('View Processed Count', 'showProcessedCount')
       .addItem('💰 View Cost Estimates', 'showCostEstimates')
@@ -317,6 +318,13 @@ function processNewEmailsManual() {
                   'Skipped (already processed): ' + stats.skipped + '\n' +
                   'Errors: ' + stats.errors;
 
+    if (stats.stoppedEarly) {
+      message += '\n\n⏱️ STOPPED EARLY:\n' +
+                 stats.stoppedReason + '\n\n' +
+                 '▶️ Run "Process New Emails Now" again to continue.\n' +
+                 '(Automation will handle this automatically)';
+    }
+
     if (stats.processed > 0) {
       message += '\n\n💰 ESTIMATED COST:\n' +
                  '- This batch: $' + batchCost.toFixed(4) + '\n' +
@@ -416,6 +424,56 @@ function showAutomationStatus() {
   message += 'Total emails processed: ' + processedCount;
 
   ui.alert('SaveMyAttachments Status', message, ui.ButtonSet.OK);
+}
+
+/**
+ * Show processing progress
+ */
+function showProgress() {
+  var ui = SpreadsheetApp.getUi();
+
+  SpreadsheetApp.getActiveSpreadsheet().toast('Calculating progress...', 'SaveMyAttachments', 3);
+
+  try {
+    var progress = getProgressStats();
+    var config = getConfig();
+
+    var message = '📊 PROCESSING PROGRESS\n\n';
+
+    message += '✅ Processed: ' + progress.processed + ' emails\n';
+    message += '📧 Estimated total: ' + progress.estimatedTotal + ' emails\n';
+    message += '⏳ Estimated remaining: ' + progress.estimatedRemaining + ' emails\n';
+    message += '📈 Progress: ' + progress.percentComplete + '%\n\n';
+
+    if (progress.estimatedRemaining > 0) {
+      var batchSize = config.batchSize || 10;
+      var runsNeeded = Math.ceil(progress.estimatedRemaining / batchSize);
+      var timeEstimate = Math.round(runsNeeded * 2); // ~2 min per run
+
+      message += '⏱️ ESTIMATED TIME TO COMPLETE:\n';
+      message += '- Runs needed: ~' + runsNeeded + ' (at ' + batchSize + ' emails/run)\n';
+      message += '- Time: ~' + timeEstimate + ' minutes\n\n';
+
+      if (config.automationEnabled === 'true') {
+        var interval = parseInt(config.automationInterval) || 15;
+        var autoTimeEstimate = Math.round(runsNeeded * interval);
+        message += '🤖 With automation (every ' + interval + ' min): ~' + autoTimeEstimate + ' minutes\n\n';
+      }
+
+      message += '💡 TIP: Enable automation to process in background\n';
+      message += '(Settings → Enable Automatic Email Processing)';
+    } else {
+      message += '✅ All emails in date range have been processed!';
+    }
+
+    message += '\n\n⚠️ Note: Estimates based on ' + config.daysBack + ' days back';
+
+    ui.alert('Processing Progress', message, ui.ButtonSet.OK);
+
+  } catch (e) {
+    Logger.log('Error showing progress: ' + e.toString());
+    ui.alert('Error', 'Failed to calculate progress: ' + e.message, ui.ButtonSet.OK);
+  }
 }
 
 /**
