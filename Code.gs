@@ -14,20 +14,12 @@ function onOpen() {
     .addItem('📧 Process New Emails Now', 'processNewEmailsManual')
     .addItem('🧪 Process Test Email', 'processTestEmail')
     .addSeparator()
-    .addSubMenu(ui.createMenu('🤖 Automation')
-      .addItem('Start Automation', 'startAutomationUI')
-      .addItem('Stop Automation', 'stopAutomationUI')
-      .addItem('View Status', 'showAutomationStatus'))
-    .addSeparator()
-    .addSubMenu(ui.createMenu('📊 Info & Monitoring')
+    .addSubMenu(ui.createMenu('🔧 Tools')
       .addItem('View Diagnostics', 'showDiagnostics')
       .addItem('View Processed Count', 'showProcessedCount')
       .addItem('💰 View Cost Estimates', 'showCostEstimates')
+      .addItem('📤 Export Logs to Drive', 'exportLogsUI')
       .addSeparator()
-      .addItem('📤 Export Logs to Drive', 'exportLogsUI'))
-    .addSeparator()
-    .addSubMenu(ui.createMenu('🔧 Tools')
-      .addItem('Create New Drive Folder', 'createNewFolder')
       .addItem('Test OpenRouter Connection', 'testOpenRouter')
       .addSeparator()
       .addItem('Clear Processed Tracking Only', 'clearProcessedUI')
@@ -139,8 +131,19 @@ function saveAllSettings(settings) {
       'BATCH_SIZE': settings.batchSize.toString(),
       'DAYS_BACK': settings.daysBack.toString(),
       'EMAIL_FILTER': settings.emailFilter,
-      'NEWEST_FIRST': settings.newestFirst.toString()
+      'NEWEST_FIRST': settings.newestFirst.toString(),
+
+      // Automation Settings
+      'AUTOMATION_ENABLED': settings.automationEnabled.toString(),
+      'AUTOMATION_INTERVAL': settings.automationInterval.toString()
     });
+
+    // Handle automation - start or stop based on setting
+    if (settings.automationEnabled) {
+      setupAutomation(settings.automationInterval);
+    } else {
+      stopAutomation();
+    }
 
     Logger.log('All settings saved successfully');
     return { success: true };
@@ -153,6 +156,35 @@ function saveAllSettings(settings) {
 
 /**
  * Create a new SaveMe folder in Drive and configure it
+ */
+/**
+ * Create new folder for settings panel
+ * Returns folder ID and name (no UI alerts)
+ */
+function createNewFolderForSettings() {
+  try {
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var folderName = 'SaveMe Attachments ' + timestamp;
+    var folder = DriveApp.createFolder(folderName);
+    var folderId = folder.getId();
+
+    Logger.log('Created new folder: ' + folderName + ' (ID: ' + folderId + ')');
+
+    return {
+      folderId: folderId,
+      folderName: folderName,
+      folderUrl: folder.getUrl()
+    };
+
+  } catch (e) {
+    Logger.log('Error creating folder: ' + e.toString());
+    throw new Error('Failed to create folder: ' + e.message);
+  }
+}
+
+/**
+ * Create new folder (legacy function for menu)
+ * Shows UI alerts
  */
 function createNewFolder() {
   var ui = SpreadsheetApp.getUi();

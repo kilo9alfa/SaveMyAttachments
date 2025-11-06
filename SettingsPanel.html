@@ -256,8 +256,13 @@
 
       <div class="form-group">
         <label for="folderId">Drive Folder *</label>
-        <input type="text" id="folderId" placeholder="Paste folder URL or ID here">
-        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here. All emails and attachments will be saved here.</div>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="folderId" placeholder="Paste folder URL or ID here" style="flex: 1;">
+          <button type="button" class="btn-secondary" onclick="createNewDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
+            📁 Create New Folder
+          </button>
+        </div>
+        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here. Or click "Create New Folder" to automatically create one.</div>
       </div>
     </div>
 
@@ -426,6 +431,36 @@
       </div>
     </div>
 
+    <!-- Automation -->
+    <div class="section">
+      <div class="section-title">🤖 Automation</div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="automationEnabled">
+        <label for="automationEnabled" class="checkbox-label">
+          Enable Automatic Email Processing
+          <div class="help-text">Automatically process new emails at regular intervals</div>
+        </label>
+      </div>
+
+      <div class="form-group" id="automationIntervalGroup" style="margin-left: 28px; display: none;">
+        <label for="automationInterval">Check for new emails every:</label>
+        <select id="automationInterval">
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15" selected>15 minutes (recommended)</option>
+          <option value="30">30 minutes</option>
+          <option value="60">1 hour</option>
+        </select>
+        <div class="help-text">More frequent checks use more quota. 15 minutes is recommended for most users.</div>
+      </div>
+
+      <div id="automationStatus" style="margin-top: 15px; padding: 12px; background: #f1f3f4; border-radius: 4px; display: none;">
+        <div style="font-weight: 500; margin-bottom: 5px;">Current Status</div>
+        <div id="automationStatusText" style="font-size: 14px; color: #666;"></div>
+      </div>
+    </div>
+
     <!-- Buttons -->
     <div class="button-group">
       <button type="button" class="btn-secondary" onclick="closePanel()">Cancel</button>
@@ -479,9 +514,15 @@
       document.getElementById('emailFilter').value = config.emailFilter || '';
       document.getElementById('newestFirst').checked = config.newestFirst !== false;
 
+      // Automation
+      document.getElementById('automationEnabled').checked = config.automationEnabled === 'true';
+      document.getElementById('automationInterval').value = config.automationInterval || '15';
+
       // Toggle visibility based on checkboxes
       toggleEmailFormatGroup();
       toggleAISettingsGroup();
+      toggleAutomationIntervalGroup();
+      updateAutomationStatus(config);
     }
 
     function saveSettings() {
@@ -532,7 +573,11 @@
         batchSize: parseInt(document.getElementById('batchSize').value),
         daysBack: parseInt(document.getElementById('daysBack').value),
         emailFilter: document.getElementById('emailFilter').value,
-        newestFirst: document.getElementById('newestFirst').checked
+        newestFirst: document.getElementById('newestFirst').checked,
+
+        // Automation
+        automationEnabled: document.getElementById('automationEnabled').checked,
+        automationInterval: parseInt(document.getElementById('automationInterval').value)
       };
 
       // Show loading
@@ -598,6 +643,51 @@
     function toggleAISettingsGroup() {
       const enableAI = document.getElementById('enableAI').checked;
       document.getElementById('aiSettingsGroup').style.display = enableAI ? 'block' : 'none';
+    }
+
+    // Toggle automation interval visibility
+    document.getElementById('automationEnabled').addEventListener('change', toggleAutomationIntervalGroup);
+
+    function toggleAutomationIntervalGroup() {
+      const automationEnabled = document.getElementById('automationEnabled').checked;
+      document.getElementById('automationIntervalGroup').style.display = automationEnabled ? 'block' : 'none';
+      document.getElementById('automationStatus').style.display = automationEnabled ? 'block' : 'none';
+    }
+
+    // Update automation status display
+    function updateAutomationStatus(config) {
+      const statusDiv = document.getElementById('automationStatus');
+      const statusText = document.getElementById('automationStatusText');
+
+      if (config.automationEnabled === 'true') {
+        const lastRun = config.lastScheduledRun ? new Date(config.lastScheduledRun).toLocaleString() : 'Never';
+        statusText.innerHTML = '✅ Automation is <strong>ACTIVE</strong><br>Interval: Every ' + config.automationInterval + ' minutes<br>Last run: ' + lastRun;
+        statusDiv.style.display = 'block';
+      } else {
+        statusText.innerHTML = '⏸️ Automation is <strong>INACTIVE</strong>';
+        statusDiv.style.display = 'none';
+      }
+    }
+
+    // Create new Drive folder
+    function createNewDriveFolder() {
+      const button = event.target;
+      button.disabled = true;
+      button.textContent = 'Creating...';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          document.getElementById('folderId').value = result.folderId;
+          showSuccess('✅ Created folder: ' + result.folderName);
+          button.disabled = false;
+          button.textContent = '📁 Create New Folder';
+        })
+        .withFailureHandler(function(error) {
+          showError('Failed to create folder: ' + error.message);
+          button.disabled = false;
+          button.textContent = '📁 Create New Folder';
+        })
+        .createNewFolderForSettings();
     }
   </script>
 </body>
