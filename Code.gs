@@ -9,10 +9,8 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('SaveMyAttachments')
-    .addItem('⚙️ Configure Settings', 'showSettings')
-    .addSeparator()
     .addItem('📧 Process New Emails Now', 'processNewEmailsManual')
-    .addItem('🧪 Process Test Email', 'processTestEmail')
+    .addItem('⚙️ Configure Settings', 'showSettings')
     .addSeparator()
     .addSubMenu(ui.createMenu('🔧 Tools')
       .addItem('View Diagnostics', 'showDiagnostics')
