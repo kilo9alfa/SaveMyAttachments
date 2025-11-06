@@ -12,6 +12,8 @@ function onOpen() {
     .addItem('📧 Process New Emails Now', 'processNewEmailsManual')
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addSeparator()
+    .addItem('🧪 Process Most Recent Email (Test)', 'processTestEmail')
+    .addSeparator()
     .addSubMenu(ui.createMenu('🔧 Tools')
       .addItem('📊 View Progress', 'showProgress')
       .addItem('View Diagnostics', 'showDiagnostics')
@@ -28,8 +30,8 @@ function onOpen() {
 }
 
 /**
- * Manual trigger to process one test email
- * This is the main function to test the proof-of-concept
+ * Process the most recent email (for testing configuration)
+ * Useful for verifying settings work before enabling automation
  */
 function processTestEmail() {
   try {
