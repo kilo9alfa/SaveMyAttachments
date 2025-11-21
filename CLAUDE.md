@@ -1523,32 +1523,178 @@ Example: 100 emails/month with Claude = ~$1-2/month
 - [OAuth Verification](https://support.google.com/cloud/answer/9110914)
 - [Publishing Guidelines](https://developers.google.com/workspace/marketplace/listing-configuration)
 
-## Next Steps
+## Next Steps - CURRENT FOCUS: Minimum Viable Launch
 
-1. **Set up Google Cloud Project**
-   - Create new project
-   - Enable Gmail, Drive, Sheets APIs
-   - Configure OAuth consent screen
+**Status:** Core features implemented. Now focused on Google Workspace Marketplace publishing requirements.
 
-2. **Create Apps Script Project**
-   - New standalone script project
-   - Copy file structure outlined above
-   - Configure manifest (appsscript.json)
+### Immediate Priority: Marketplace Launch Preparation
 
-3. **Build MVP Features**
-   - Start with manual email processing
-   - Add OpenRouter integration
-   - Test with personal Gmail account
+#### Phase 1: Website & Legal Requirements (Week 1)
+- [ ] **Create website with required legal pages**
+  - Privacy Policy (MANDATORY for OAuth verification)
+  - Terms of Service (MANDATORY for OAuth verification)
+  - Support/Contact page
+  - Simple landing page describing SaveMyAttachments
+  - Can be simple GitHub Pages or basic HTML site
 
-4. **Iterate & Test**
-   - Get beta testers
-   - Collect feedback
-   - Refine UX and error handling
+- [ ] **Google Cloud Project Setup**
+  - Create/configure Google Cloud Project
+  - Enable required APIs (Gmail, Drive, Sheets)
+  - Configure OAuth Consent Screen with:
+    - App name, logo, support email
+    - Links to privacy policy & terms (public URLs required)
+    - Justification for each scope
 
-5. **Prepare for Launch**
-   - Complete documentation
-   - Security audit
-   - Submit to Marketplace
+#### Phase 2: OAuth Verification (Week 2-7)
+- [ ] **Submit OAuth Verification Request**
+  - Complete security questionnaire
+  - Record video demonstration of app functionality
+  - Document why each sensitive/restricted scope is needed
+  - Submit to Google for review
+  - **Timeline: 2-6 weeks for Google to review and approve**
+
+#### Phase 3: Marketplace Assets (Week 2-3, parallel with OAuth)
+- [ ] **Create visual assets**
+  - App icon (128x128, 220x140, 32x32 pixels)
+  - Screenshots (5+ showing key features)
+  - Demo video (optional but recommended)
+
+- [ ] **Prepare listing content**
+  - App description (short and long versions)
+  - Feature list
+  - Category selection
+  - Support email/URL
+  - Pricing tier information
+
+#### Phase 4: Final Testing & Polish (Week 3-4)
+- [ ] **Comprehensive testing**
+  - Test all features end-to-end
+  - Error handling validation
+  - Performance testing with large email volumes
+  - Test with different Google Workspace accounts
+
+- [ ] **Documentation review**
+  - User manual complete ✅
+  - In-app help text
+  - Support documentation
+
+- [ ] **Beta testing** (optional but recommended)
+  - 5-10 real users
+  - Collect feedback
+  - Fix critical bugs
+
+#### Phase 5: Marketplace Submission (Week 5-6)
+- [ ] **Create marketplace listing**
+  - Upload all assets
+  - Configure pricing
+  - Set up payment (if not free tier)
+  - Submit for Google review
+
+- [ ] **Final review checklist**
+  - OAuth verification approved ✅
+  - All legal pages live ✅
+  - Assets uploaded ✅
+  - Testing complete ✅
+  - Support system ready ✅
+
+### Future Enhancements (Post-Launch)
+
+These features are planned for future releases after successful marketplace launch:
+
+#### Phase A: Advanced Organization (v1.1)
+- **Dynamic Folder Structure Templates**
+  - `{year}/{month}/{day}` → `2024/11/06/`
+  - `{sender_email}/{year-month}` → `client@company.com/2024-11/`
+  - `{label}/{sender_name}` → `Important/John Smith/`
+
+- **Custom File Naming Templates**
+  - `{YYYYMMDD}-{subject}.pdf` → `20241104-Invoice #1234.pdf`
+  - `{sender_name}_{YYYY-MM-DD_HHmmss}` → `John Smith_2024-11-04_143022`
+
+#### Phase B: Enhanced Filtering (v1.2)
+- Sender whitelist/blacklist per rule
+- Subject keyword requirements
+- Min/max attachment count
+- Date range filtering
+- Per-rule attachment filters (file type, size)
+
+#### Phase C: Better UX (v1.3)
+- Model selector UI with pricing comparison
+- Processing dashboard with real-time stats
+- Onboarding wizard for first-time setup
+- Email notifications on errors
+- Daily/weekly summary reports
+
+#### Phase D: Power Features (v1.4)
+- Export/import rules (backup/sharing)
+- Custom Sheet column mapping
+- Batch reprocessing of old emails
+- Advanced analytics dashboard
+- Multiple AI models per rule
+- **Gmail label management**:
+  - Automatically label processed emails (e.g., "SaveMe/Processed")
+  - Visual tracking in Gmail inbox
+  - Bulk remove labels tool for fresh start
+
+---
+
+**Current Status:** MVP features complete, documentation ready, website repository created and pushed to GitHub
+**Website:** The Coral Block (thecoralblock.com)
+**Repository:** https://github.com/kilo9alfa/thecoralblock
+**Timeline:** 5-7 weeks to marketplace submission (2-6 weeks of that is Google OAuth review)
+
+**Domain Strategy:**
+- Domain registrar: Cloudflare (transferring from Squarespace for simplicity)
+- Website hosting: Cloudflare Pages (login via Apple account)
+- Email: iCloud+ Custom Email Domain (second domain, already have iCloud+)
+- DNS: All managed in Cloudflare (easier - everything in one place)
+
+**Current Status (as of Nov 8, 2025):**
+
+**Website & Domain:**
+1. ✅ Website repository created and pushed to GitHub (thecoralblock)
+2. ✅ Website deployed to Cloudflare Pages (https://thecoralblock.pages.dev)
+3. ✅ Privacy Policy and Terms of Service pages live
+4. ✅ Product landing page for SaveMyAttachments created
+5. ✅ Received Squarespace authorization code
+6. ✅ Initiated domain transfer from Squarespace to Cloudflare
+7. ⏳ Domain transfer pending (3-7 days, automated)
+
+**Google Cloud Project Setup:**
+8. ✅ Created Google Cloud Project (ID: savemyattachments)
+9. ✅ Enabled 3 required APIs (Gmail, Drive, Sheets)
+10. ✅ OAuth Consent Screen - App Information completed
+11. ✅ OAuth Consent Screen - Branding completed (logo skipped)
+12. 🔄 OAuth Consent Screen - Scopes section (IN PROGRESS - need to navigate to page)
+13. ⏳ OAuth Consent Screen - Test Users section (next)
+14. ⏳ Link Apps Script project to Cloud Project
+15. ⏳ Test OAuth flow
+
+**Strategy Decision (REVISED on Nov 8):**
+- **Changed approach:** Start with dp@databeacon.aero instead of waiting for david@thecoralblock.com
+- **Rationale:** Faster time to market - OAuth verification takes 2-6 weeks, domain transfer is automated anyway
+- **Transfer plan:** Once david@thecoralblock.com is ready, transfer project ownership via Google Cloud IAM
+- **Timeline benefit:** Start OAuth verification ~1 week earlier
+
+**Parallel Tracks:**
+
+**Track 1: Google Cloud & OAuth (ACTIVE NOW)**
+1. ✅ Create Google Cloud Project with dp@databeacon.aero
+2. 🔄 Configure OAuth Consent Screen with .pages.dev URLs (in progress - on Scopes step)
+3. ⏳ Link Apps Script project
+4. ⏳ Test OAuth flow
+5. ⏳ Wait for domain transfer to complete (background process, 3-7 days)
+6. ⏳ Transfer project ownership to david@thecoralblock.com (after email ready)
+7. ⏳ Update OAuth Consent Screen with custom domain URLs and support email
+8. ⏳ Prepare verification materials (video demo, written justifications)
+9. ⏳ Submit for OAuth verification (2-6 weeks)
+
+**Track 2: Domain & Email (WAITING)**
+1. ✅ Domain transfer initiated (pending 3-7 days)
+2. ⏳ Add custom domain to Cloudflare Pages (after transfer completes)
+3. ⏳ Configure DNS in Cloudflare for iCloud email
+4. ⏳ Add thecoralblock.com as second domain to iCloud+
+5. ⏳ Create email addresses: david@, support@, privacy@
 
 ---
 
@@ -1585,10 +1731,11 @@ Example: 100 emails/month with Claude = ~$1-2/month
 
 ---
 
-**Project Status:** Enhanced Planning Complete - Custom AI Questions Feature Added
-**Last Updated:** 2025-11-05
-**Estimated Timeline:** 6 weeks to MVP, 8-10 weeks to full launch
-**Next Step:** Begin Phase 1 development (Core MVP features)
+**Project Status:** MVP Features Complete - Now Focused on Google Workspace Marketplace Launch
+**Last Updated:** 2025-11-08
+**Current Phase:** Actively configuring Google Cloud Project OAuth Consent Screen + Domain transfer in progress
+**Estimated Timeline:** 4-6 weeks to marketplace submission (started OAuth setup early)
+**Next Step:** Complete OAuth Consent Screen Scopes section (see Track 1 above)
 
 ## Feature Enhancement: Custom AI Questions
 

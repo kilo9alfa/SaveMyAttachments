@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #1a73e8;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .rules-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .rules-header h2 {
+      font-size: 18px;
+      color: #333;
+    }
+
+    .btn-create {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-create:hover {
+      background: #1557b0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .rules-list {
+      margin-bottom: 20px;
+    }
+
+    .rule-card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+
+    .rule-card:hover {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .rule-card.disabled {
+      opacity: 0.6;
+    }
+
+    .rule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .rule-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .rule-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-edit {
+      background: #4285f4;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #3367d6;
+    }
+
+    .btn-delete {
+      background: #ea4335;
+      color: white;
+    }
+
+    .btn-delete:hover {
+      background: #d33b2c;
+    }
+
+    .btn-toggle {
+      background: #34a853;
+      color: white;
+    }
+
+    .btn-toggle:hover {
+      background: #2d8e47;
+    }
+
+    .btn-toggle.disabled {
+      background: #9aa0a6;
+    }
+
+    .rule-details {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .rule-details div {
+      margin-bottom: 4px;
+    }
+
+    .rule-details strong {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .rule-stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #5f6368;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .info-box {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary {
+      background: #f1f3f4;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e8eaed;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #1a73e8;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    /* Form Panel Styles */
+    .form-panel {
+      display: none;
+      background: white;
+      border: 2px solid #1a73e8;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .form-panel.active {
+      display: block;
+    }
+
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .form-header h2 {
+      color: #1a73e8;
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+
+    .form-help {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .form-section {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .form-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 15px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    .btn-save {
+      background: #1a73e8;
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-save:hover {
+      background: #1557b0;
+    }
+
+    .btn-cancel {
+      background: #f1f3f4;
+      color: #333;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-cancel:hover {
+      background: #e8eaed;
+    }
+
+    .required {
+      color: #d93025;
+      margin-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 Manage Rules</h1>
+    <p class="subtitle">Create and manage multiple email processing workflows</p>
+
+    <div class="success-message" id="successMessage"></div>
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="info-box">
+      <strong>💡 How Rules Work:</strong><br>
+      Each rule is an independent workflow with its own Gmail filter, AI prompt, destination sheet, and folder.
+      Rules are processed in order, and each email is only processed by the first matching rule.
+      Emails that don't match any rule are processed by the catch-all (if enabled in Settings).
+    </div>
+
+    <!-- Rule Form Panel -->
+    <div id="ruleFormPanel" class="form-panel">
+      <div class="form-header">
+        <h2 id="formTitle">Create New Rule</h2>
+      </div>
+
+      <input type="hidden" id="ruleId" value="">
+
+      <!-- Basic Settings -->
+      <div class="form-group">
+        <label for="ruleName">Rule Name<span class="required">*</span></label>
+        <input type="text" id="ruleName" placeholder='e.g., "Client Invoices", "Receipts", "Important Emails"' required>
+        <div class="form-help">A descriptive name for this workflow</div>
+      </div>
+
+      <div class="form-group">
+        <label for="gmailFilter">Gmail Filter<span class="required">*</span></label>
+        <input type="text" id="gmailFilter" placeholder='e.g., "from:client@company.com has:attachment"' value="has:attachment" required>
+        <div class="form-help">Use Gmail search syntax (same as Gmail search box)</div>
+      </div>
+
+      <div class="form-group">
+        <label for="priority">Priority<span class="required">*</span></label>
+        <input type="number" id="priority" min="1" max="999" value="999" required>
+        <div class="form-help">Lower number = higher priority (1=highest, 999=lowest). Rules are processed in priority order.</div>
+      </div>
+
+      <!-- Destinations Section -->
+      <div class="form-section">
+        <div class="form-section-title">Destinations (Optional - leave blank to use global defaults)</div>
+
+        <div class="form-group">
+          <label for="driveFolderId">Drive Folder URL</label>
+          <input type="text" id="driveFolderId" placeholder="Paste Drive folder URL or leave blank for global default">
+          <div class="form-help">Where attachments will be saved</div>
+        </div>
+
+        <div class="form-group">
+          <label for="sheetId">Spreadsheet URL</label>
+          <input type="text" id="sheetId" placeholder="Paste full spreadsheet URL (including #gid= for specific sheet)">
+          <div class="form-help">Where email data will be logged. Include #gid= to target specific sheet/tab.</div>
+        </div>
+      </div>
+
+      <!-- AI Settings Section -->
+      <div class="form-section">
+        <div class="form-section-title">AI Settings (Optional)</div>
+
+        <div class="form-group">
+          <label for="aiPrompt">Custom AI Prompt</label>
+          <textarea id="aiPrompt" placeholder="Leave blank to use global prompt from settings"></textarea>
+          <div class="form-help">Custom instruction for AI summarization. Examples: "Extract invoice total and due date", "List action items"</div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="cancelRuleForm()">Cancel</button>
+        <button type="button" class="btn-save" onclick="saveRuleForm()">💾 Save Rule</button>
+      </div>
+    </div>
+
+    <div class="rules-header" id="rulesHeader">
+      <h2>Your Rules</h2>
+      <button class="btn-create" onclick="showCreateRuleForm()">➕ Create New Rule</button>
+    </div>
+
+    <div id="rulesContainer">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>Loading rules...</div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button type="button" class="btn-secondary" onclick="closePanel()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Load rules when panel opens
+    window.onload = function() {
+      loadRules();
+    };
+
+    function loadRules() {
+      document.querySelector('.loading').style.display = 'block';
+
+      google.script.run
+        .withSuccessHandler(displayRules)
+        .withFailureHandler(showError)
+        .getAllRules();
+    }
+
+    function displayRules(rules) {
+      document.querySelector('.loading').style.display = 'none';
+
+      var container = document.getElementById('rulesContainer');
+
+      if (!rules || rules.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h3>No Rules Yet</h3>
+            <p>Create your first rule to start organizing emails into different workflows.<br>
+            For example: "Client Invoices", "Team Reports", "Receipts", etc.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort by order
+      rules.sort((a, b) => (a.order || 999) - (b.order || 999));
+
+      // Render rules immediately
+      var html = '<div class="rules-list">';
+
+      rules.forEach(function(rule) {
+        var enabledClass = rule.enabled ? '' : 'disabled';
+        var toggleText = rule.enabled ? 'Disable' : 'Enable';
+        var toggleClass = rule.enabled ? '' : 'disabled';
+
+        var lastRun = rule.lastRun ? new Date(rule.lastRun).toLocaleString() : 'Never';
+        var totalProcessed = rule.totalProcessed || 0;
+
+        // Build full URLs for display
+        var folderDisplay, folderUrl;
+        if (rule.driveFolderId) {
+          folderUrl = 'https://drive.google.com/drive/folders/' + rule.driveFolderId;
+          folderDisplay = '<a href="' + folderUrl + '" target="_blank" style="color: #1a73e8; text-decoration: none;">' +
+                         escapeHtml(rule.driveFolderId) + ' 🔗</a>';
+        } else {
+          folderDisplay = '<em>Using global default</em>';
+        }
+
+        var sheetDisplay, sheetUrl;
+        if (rule.sheetId) {
+          // Build URL with gid if available
+          if (rule.sheetGid && rule.sheetGid.trim() !== '') {
+            sheetUrl = 'https://docs.google.com/spreadsheets/d/' + rule.sheetId + '/edit#gid=' + rule.sheetGid;
+            sheetDisplay = '<a href="' + sheetUrl + '" target="_blank" style="color: #1a73e8; text-decoration: none;">' +
+                          escapeHtml(rule.sheetId) + ' 🔗</a> <span style="color: #666;">(gid:' + escapeHtml(rule.sheetGid) + ')</span>';
+          } else {
+            sheetUrl = 'https://docs.google.com/spreadsheets/d/' + rule.sheetId;
+            sheetDisplay = '<a href="' + sheetUrl + '" target="_blank" style="color: #1a73e8; text-decoration: none;">' +
+                          escapeHtml(rule.sheetId) + ' 🔗</a>';
+          }
+        } else {
+          sheetDisplay = '<em>Using current spreadsheet</em>';
+        }
+
+        html += `
+          <div class="rule-card ${enabledClass}">
+            <div class="rule-header">
+              <div class="rule-name">
+                ${rule.enabled ? '✅' : '⏸️'} ${escapeHtml(rule.name)}
+              </div>
+              <div class="rule-actions">
+                <button class="btn-small btn-toggle ${toggleClass}" onclick="toggleRule('${rule.id}', ${!rule.enabled})">
+                  ${toggleText}
+                </button>
+                <button class="btn-small btn-edit" onclick="editRule('${rule.id}')">
+                  ✏️ Edit
+                </button>
+                <button class="btn-small btn-delete" onclick="deleteRule('${rule.id}', '${escapeHtml(rule.name)}')">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+
+            <div class="rule-details">
+              <div><strong>Gmail Filter:</strong> ${escapeHtml(rule.gmailFilter || 'has:attachment')}</div>
+              <div><strong>Drive Folder:</strong> ${folderDisplay}</div>
+              <div><strong>Destination Sheet:</strong> ${sheetDisplay}</div>
+              ${rule.aiPrompt ? '<div><strong>Custom AI Prompt:</strong> ' + escapeHtml(rule.aiPrompt.substring(0, 60)) + '...</div>' : ''}
+
+              <div class="rule-stats">
+                <span>📊 Processed: ${totalProcessed} emails</span>
+                <span>⏰ Last run: ${lastRun}</span>
+                <span title="Lower number = higher priority. Rules with lower priority numbers are processed first.">🔢 Priority: ${rule.order || 999} (${(rule.order || 999) === 1 ? 'Highest' : (rule.order || 999) < 50 ? 'High' : (rule.order || 999) < 500 ? 'Medium' : 'Low'})</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // Show form for creating new rule
+    function showCreateRuleForm() {
+      // Reset form
+      document.getElementById('formTitle').textContent = 'Create New Rule';
+      document.getElementById('ruleId').value = '';
+      document.getElementById('ruleName').value = '';
+      document.getElementById('gmailFilter').value = 'has:attachment';
+      document.getElementById('priority').value = '999';
+      document.getElementById('driveFolderId').value = '';
+      document.getElementById('sheetId').value = '';
+      document.getElementById('aiPrompt').value = '';
+
+      // Show form, hide rules list
+      document.getElementById('ruleFormPanel').classList.add('active');
+      document.getElementById('rulesHeader').style.display = 'none';
+      document.getElementById('rulesContainer').style.display = 'none';
+    }
+
+    // Cancel form and return to list
+    function cancelRuleForm() {
+      document.getElementById('ruleFormPanel').classList.remove('active');
+      document.getElementById('rulesHeader').style.display = 'flex';
+      document.getElementById('rulesContainer').style.display = 'block';
+    }
+
+    // Save rule from form
+    function saveRuleForm() {
+      // Validate required fields
+      var ruleName = document.getElementById('ruleName').value.trim();
+      var gmailFilter = document.getElementById('gmailFilter').value.trim();
+      var priority = parseInt(document.getElementById('priority').value);
+
+      if (!ruleName) {
+        showError('❌ Rule name is required');
+        return;
+      }
+
+      if (!gmailFilter) {
+        showError('❌ Gmail filter is required');
+        return;
+      }
+
+      if (isNaN(priority) || priority < 1 || priority > 999) {
+        showError('❌ Priority must be between 1 and 999');
+        return;
+      }
+
+      // Build rule object
+      var rule = {
+        name: ruleName,
+        enabled: true,
+        order: priority,
+        gmailFilter: gmailFilter,
+        driveFolderId: document.getElementById('driveFolderId').value.trim(),
+        sheetId: document.getElementById('sheetId').value.trim(),
+        aiPrompt: document.getElementById('aiPrompt').value.trim()
+      };
+
+      // If editing existing rule, include ID
+      var ruleId = document.getElementById('ruleId').value;
+      if (ruleId) {
+        rule.id = ruleId;
+      }
+
+      // Show loading
+      document.querySelector('.btn-save').disabled = true;
+      document.querySelector('.btn-save').textContent = 'Saving...';
+
+      // Save rule
+      google.script.run
+        .withSuccessHandler(function(savedRule) {
+          document.querySelector('.btn-save').disabled = false;
+          document.querySelector('.btn-save').textContent = '💾 Save Rule';
+
+          // Hide form and show rules list
+          cancelRuleForm();
+
+          // Show loading immediately
+          var container = document.getElementById('rulesContainer');
+          container.innerHTML = '<div class="loading" style="display:block;"><div class="spinner"></div><div>Loading rules...</div></div>';
+
+          // Reload rules
+          setTimeout(function() {
+            loadRules();
+          }, 100);
+        })
+        .withFailureHandler(function(error) {
+          document.querySelector('.btn-save').disabled = false;
+          document.querySelector('.btn-save').textContent = '💾 Save Rule';
+          showError('❌ Failed to save rule: ' + (error.message || error.toString()));
+        })
+        .saveRule(rule);
+    }
+
+    // Show form for editing existing rule
+    function editRule(ruleId) {
+      // Load rule and populate form
+      google.script.run
+        .withSuccessHandler(function(rule) {
+          // Populate form with rule data
+          document.getElementById('formTitle').textContent = 'Edit Rule';
+          document.getElementById('ruleId').value = rule.id;
+          document.getElementById('ruleName').value = rule.name || '';
+          document.getElementById('gmailFilter').value = rule.gmailFilter || 'has:attachment';
+          document.getElementById('priority').value = rule.order || 999;
+          document.getElementById('driveFolderId').value = rule.driveFolderId || '';
+          document.getElementById('sheetId').value = rule.sheetId || '';
+          document.getElementById('aiPrompt').value = rule.aiPrompt || '';
+
+          // Show form, hide rules list
+          document.getElementById('ruleFormPanel').classList.add('active');
+          document.getElementById('rulesHeader').style.display = 'none';
+          document.getElementById('rulesContainer').style.display = 'none';
+        })
+        .withFailureHandler(function(error) {
+          showError('❌ Failed to load rule: ' + (error.message || error.toString()));
+        })
+        .getRuleById(ruleId);
+    }
+
+    function deleteRule(ruleId, ruleName) {
+      if (!confirm('Are you sure you want to delete rule "' + ruleName + '"?\n\nThis cannot be undone.')) {
+        return;
+      }
+
+      // Show loading in container
+      var container = document.getElementById('rulesContainer');
+      container.innerHTML = '<div class="loading" style="display:block;"><div class="spinner"></div><div>Deleting rule...</div></div>';
+
+      google.script.run
+        .withSuccessHandler(function() {
+          showSuccess('✅ Rule "' + ruleName + '" deleted successfully!');
+          // Reload rules to refresh the list
+          loadRules();
+        })
+        .withFailureHandler(function(error) {
+          showError('❌ Failed to delete rule: ' + error.message);
+          // Reload rules anyway to show current state
+          loadRules();
+        })
+        .deleteRule(ruleId);
+    }
+
+    function toggleRule(ruleId, newState) {
+      // Show loading
+      var container = document.getElementById('rulesContainer');
+      var originalContent = container.innerHTML;
+      container.innerHTML = '<div class="loading" style="display:block;"><div class="spinner"></div><div>' + (newState ? 'Enabling' : 'Disabling') + ' rule...</div></div>';
+
+      google.script.run
+        .withSuccessHandler(function() {
+          showSuccess('✅ Rule ' + (newState ? 'enabled' : 'disabled') + ' successfully!');
+          setTimeout(function() {
+            loadRules();
+          }, 1000);
+        })
+        .withFailureHandler(function(error) {
+          showError('❌ Failed to toggle rule: ' + (error.message || error.toString()));
+          container.innerHTML = originalContent;
+        })
+        .toggleRuleEnabled(ruleId, newState);
+    }
+
+    function showSuccess(message) {
+      var el = document.getElementById('successMessage');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(function() {
+        el.style.display = 'none';
+      }, 5000);
+    }
+
+    function showError(message) {
+      var el = document.getElementById('errorMessage');
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(function() {
+        el.style.display = 'none';
+      }, 5000);
+    }
+
+    function closePanel() {
+      google.script.host.close();
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      var div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

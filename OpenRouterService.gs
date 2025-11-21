@@ -103,3 +103,79 @@ function fetchAvailableModels() {
     return [];
   }
 }
+
+/**
+ * Get model pricing with weekly cache
+ * Fetches from OpenRouter API and caches for 7 days
+ * Falls back to hardcoded pricing if API fails
+ *
+ * @return {Object} Model pricing map (model ID -> price per million tokens)
+ */
+function getModelPricing() {
+  var userProperties = PropertiesService.getUserProperties();
+  var cachedPricing = userProperties.getProperty('MODEL_PRICING_CACHE');
+  var cacheTimestamp = userProperties.getProperty('MODEL_PRICING_TIMESTAMP');
+
+  // Check if cache is valid (less than 7 days old)
+  var now = new Date().getTime();
+  var weekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+  if (cachedPricing && cacheTimestamp) {
+    var age = now - parseInt(cacheTimestamp);
+    if (age < weekInMs) {
+      Logger.log('Using cached model pricing (age: ' + Math.round(age / (24 * 60 * 60 * 1000)) + ' days)');
+      return JSON.parse(cachedPricing);
+    }
+  }
+
+  // Cache expired or missing - fetch fresh pricing
+  Logger.log('Fetching fresh model pricing from OpenRouter...');
+
+  try {
+    var models = fetchAvailableModels();
+    var pricing = {};
+
+    models.forEach(function(model) {
+      if (model.pricing && model.pricing.prompt) {
+        // OpenRouter returns pricing in dollars per token, convert to per million tokens
+        var pricePerToken = parseFloat(model.pricing.prompt);
+        pricing[model.id] = pricePerToken * 1000000;
+      }
+    });
+
+    // Cache the pricing
+    userProperties.setProperty('MODEL_PRICING_CACHE', JSON.stringify(pricing));
+    userProperties.setProperty('MODEL_PRICING_TIMESTAMP', now.toString());
+
+    Logger.log('Cached pricing for ' + Object.keys(pricing).length + ' models');
+    return pricing;
+
+  } catch (e) {
+    Logger.log('Error fetching pricing from API, using fallback: ' + e.toString());
+
+    // Fallback to hardcoded pricing
+    return {
+      'anthropic/claude-3.5-sonnet': 3.00,
+      'anthropic/claude-3-haiku': 0.25,
+      'anthropic/claude-3-opus': 15.00,
+      'openai/gpt-4-turbo': 10.00,
+      'openai/gpt-3.5-turbo': 0.50,
+      'google/gemini-pro': 0.00,
+      'meta-llama/llama-3-70b-instruct': 0.70,
+      'mistralai/mistral-7b-instruct': 0.10
+    };
+  }
+}
+
+/**
+ * Force refresh of pricing cache (for manual testing)
+ */
+function refreshPricingCache() {
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteProperty('MODEL_PRICING_CACHE');
+  userProperties.deleteProperty('MODEL_PRICING_TIMESTAMP');
+
+  var pricing = getModelPricing();
+  Logger.log('Pricing cache refreshed with ' + Object.keys(pricing).length + ' models');
+  return pricing;
+}

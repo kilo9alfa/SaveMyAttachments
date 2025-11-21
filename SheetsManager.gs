@@ -8,9 +8,49 @@
  * Each row represents ONE attachment from an email
  *
  * @param {Object} data - Email data object with timestamp, sender, subject, etc.
+ * @param {string} sheetId - Optional spreadsheet ID (for rules support)
+ * @param {string} sheetGid - Optional sheet gid to find specific tab
  */
-function addToSheet(data) {
-  var sheet = getCurrentSheet();
+function addToSheet(data, sheetId, sheetGid) {
+  // Get sheet: use sheetId if provided (for rules), otherwise use current sheet
+  var sheet;
+  if (sheetId) {
+    try {
+      var spreadsheet = SpreadsheetApp.openById(sheetId);
+
+      // If gid provided, find sheet by gid
+      if (sheetGid && sheetGid.trim() !== '') {
+        var sheets = spreadsheet.getSheets();
+        var foundSheet = null;
+
+        for (var i = 0; i < sheets.length; i++) {
+          var currentSheet = sheets[i];
+          var currentGid = currentSheet.getSheetId().toString();
+
+          if (currentGid === sheetGid.trim()) {
+            foundSheet = currentSheet;
+            break;
+          }
+        }
+
+        if (foundSheet) {
+          sheet = foundSheet;
+          Logger.log('Using rule-specific sheet: ' + sheetId + ' / gid:' + sheetGid + ' (' + sheet.getName() + ')');
+        } else {
+          Logger.log('Sheet with gid "' + sheetGid + '" not found, using first sheet');
+          sheet = spreadsheet.getActiveSheet();
+        }
+      } else {
+        sheet = spreadsheet.getActiveSheet();
+        Logger.log('Using rule-specific sheet: ' + sheetId + ' (first sheet)');
+      }
+    } catch (e) {
+      Logger.log('Error opening sheet ' + sheetId + ': ' + e.toString());
+      throw new Error('Could not open spreadsheet: ' + sheetId);
+    }
+  } else {
+    sheet = getCurrentSheet();
+  }
 
   // Ensure headers exist (with Message ID as first hidden column)
   if (sheet.getLastRow() === 0) {
@@ -96,10 +136,23 @@ function addToSheet(data) {
  * Check if an email is already in the sheet (by message ID)
  *
  * @param {string} messageId - Gmail message ID
+ * @param {string} sheetId - Optional spreadsheet ID (for rules support)
  * @return {boolean} True if email is already in sheet
  */
-function isEmailInSheet(messageId) {
-  var sheet = getCurrentSheet();
+function isEmailInSheet(messageId, sheetId) {
+  // Get sheet: use sheetId if provided (for rules), otherwise use current sheet
+  var sheet;
+  if (sheetId) {
+    try {
+      var spreadsheet = SpreadsheetApp.openById(sheetId);
+      sheet = spreadsheet.getActiveSheet();
+    } catch (e) {
+      Logger.log('Error opening sheet ' + sheetId + ' in isEmailInSheet: ' + e.toString());
+      return false; // If can't open sheet, assume email not in it
+    }
+  } else {
+    sheet = getCurrentSheet();
+  }
 
   // If no data yet, return false
   if (sheet.getLastRow() <= 1) {

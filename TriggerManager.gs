@@ -40,6 +40,7 @@ function setupAutomation(intervalMinutes) {
 /**
  * This is the function that runs automatically on schedule
  * It's called by the time-based trigger
+ * Now uses the Rules Engine for processing
  */
 function runScheduledProcessing() {
   Logger.log('===== Scheduled processing started =====');
@@ -53,8 +54,8 @@ function runScheduledProcessing() {
       return;
     }
 
-    // Process new emails
-    var stats = processNewEmails(config);
+    // Process new emails using rules engine
+    var stats = processNewEmailsWithRules();
 
     Logger.log('Scheduled processing complete:');
     Logger.log('- Found: ' + stats.found);
@@ -75,6 +76,13 @@ function runScheduledProcessing() {
   }
 
   Logger.log('===== Scheduled processing finished =====');
+}
+
+/**
+ * Stop automation (alias for removeAllTriggers)
+ */
+function stopAutomation() {
+  removeAllTriggers();
 }
 
 /**

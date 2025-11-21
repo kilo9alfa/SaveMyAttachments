@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaveMyAttachments - User Manual</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 { font-size: 2.5em; margin-bottom: 0.5em; }
+        h2 { font-size: 2em; margin-top: 1.5em; border-bottom: 2px solid #e0e0e0; padding-bottom: 0.3em; }
+        h3 { font-size: 1.5em; margin-top: 1.2em; }
+        h4 { font-size: 1.2em; margin-top: 1em; }
+        code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f5f5f5; font-weight: bold; }
+        ul, ol { margin: 1em 0; padding-left: 2em; }
+        .toc { background: #f9f9f9; padding: 20px; border-radius: 5px; margin: 2em 0; }
+        .toc ul { list-style: none; padding-left: 0; }
+        .toc li { margin: 0.5em 0; }
+        .required { color: #d32f2f; }
+        .note { background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 1em 0; }
+        .warning { background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; margin: 1em 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>SaveMyAttachments - User Manual</h1>
+</header>
+
+<nav class="toc">
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#introduction">1. Introduction</a></li>
+        <li><a href="#quick-start">2. Quick Start Guide</a></li>
+        <li><a href="#global-settings">3. Global Settings</a></li>
+        <li><a href="#rules-engine">4. Rules Engine</a></li>
+        <li><a href="#processing">5. Processing Emails</a></li>
+        <li><a href="#data">6. Understanding Your Data</a></li>
+        <li><a href="#tools">7. Tools &amp; Utilities</a></li>
+        <li><a href="#troubleshooting">8. Troubleshooting</a></li>
+        <li><a href="#faq">9. FAQ</a></li>
+    </ul>
+</nav>
+
+<main>
+
+<section id="introduction">
+    <h2>1. Introduction</h2>
+
+    <p><strong>SaveMyAttachments</strong> is a Google Workspace Add-on that automatically processes your Gmail emails, saves attachments to Google Drive, logs email data to Google Sheets, and generates AI-powered summaries using OpenRouter.</p>
+
+    <h3>Key Features</h3>
+    <ul>
+        <li><strong>Multiple Workflow Rules</strong>: Create unlimited rules for different email types (invoices, receipts, clients, etc.)</li>
+        <li><strong>AI-Powered Summaries</strong>: Get intelligent email summaries using 200+ AI models</li>
+        <li><strong>Smart Organization</strong>: Save emails and attachments to organized folders in Google Drive</li>
+        <li><strong>Searchable Index</strong>: All email data logged in Google Sheets with clickable links</li>
+        <li><strong>Flexible Filtering</strong>: Use Gmail search syntax to target specific emails</li>
+        <li><strong>Catch-All Mode</strong>: Process unmatched emails with default settings</li>
+    </ul>
+</section>
+
+<section id="quick-start">
+    <h2>2. Quick Start Guide</h2>
+
+    <h3>Step 1: Initial Setup</h3>
+    <ol>
+        <li>Open your Google Sheet</li>
+        <li>Go to <strong>SaveMyAttachments</strong> menu → <strong>⚙️ Configure Settings</strong></li>
+        <li>Configure required settings:
+            <ul>
+                <li><strong>OpenRouter API Key</strong>: Get yours at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+                <li><strong>Google Drive Folder</strong>: Where attachments will be saved</li>
+                <li><strong>AI Model</strong>: Choose from 200+ available models</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Step 2: Create Your First Rule</h3>
+    <ol>
+        <li>Go to <strong>SaveMyAttachments</strong> menu → <strong>📋 Manage Rules</strong></li>
+        <li>Click <strong>Create New Rule</strong></li>
+        <li>Fill in:
+            <ul>
+                <li><strong>Rule Name</strong>: e.g., "Client Invoices"</li>
+                <li><strong>Gmail Filter</strong>: e.g., <code>from:client@company.com has:attachment</code></li>
+                <li><strong>Priority</strong>: Lower number = higher priority (default: 999)</li>
+            </ul>
+        </li>
+        <li>Optional: Set custom folder, sheet, or AI prompt</li>
+        <li>Click <strong>Save Rule</strong></li>
+    </ol>
+
+    <h3>Step 3: Process Emails</h3>
+    <ol>
+        <li>Go to <strong>SaveMyAttachments</strong> menu → <strong>📧 Process New Emails Now</strong></li>
+        <li>Wait for processing to complete</li>
+        <li>Check your Google Sheet for results</li>
+        <li>Check your Drive folder for saved attachments</li>
+    </ol>
+
+    <h3>Step 4: Automate (Optional)</h3>
+    <p>Go to <strong>Configure Settings</strong> → <strong>Automation</strong> section to enable automatic processing every 15-30 minutes.</p>
+</section>
+
+<section id="global-settings">
+    <h2>3. Global Settings</h2>
+
+    <h3>Required Settings</h3>
+
+    <h4>OpenRouter API Key</h4>
+    <ul>
+        <li><strong>What it is</strong>: Your personal API key from OpenRouter</li>
+        <li><strong>Get it</strong>: <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+        <li><strong>Cost</strong>: Pay-as-you-go (typically $0.001-0.03 per email depending on model)</li>
+        <li><strong>Security</strong>: Stored securely in Google's PropertiesService</li>
+    </ul>
+
+    <h4>Google Drive Folder</h4>
+    <ul>
+        <li><strong>What it is</strong>: Where your attachments and email PDFs will be saved</li>
+        <li><strong>Options</strong>:
+            <ul>
+                <li>Create new folder (recommended)</li>
+                <li>Use existing folder</li>
+                <li>Shared Drive support available</li>
+            </ul>
+        </li>
+        <li><strong>Format</strong>: Paste the full Drive folder URL</li>
+    </ul>
+
+    <h3>AI Settings</h3>
+
+    <h4>AI Model Selection</h4>
+    <p>Choose from 200+ models:</p>
+    <ul>
+        <li><strong>GPT-4 Turbo</strong>: Most capable, ~$0.01-0.03/email</li>
+        <li><strong>Claude 3.5 Sonnet</strong>: Excellent quality, ~$0.01-0.02/email</li>
+        <li><strong>Gemini Pro</strong>: Good balance, ~$0.001-0.005/email</li>
+        <li><strong>Llama 3.1 70B</strong>: Budget-friendly, ~$0.0005-0.001/email</li>
+    </ul>
+
+    <h4>Default AI Prompt</h4>
+    <p>The default prompt used for all emails unless overridden by a rule.</p>
+    <p><strong>Default</strong>: <code>Summarize this email in 5-10 words, focusing on the main action or topic:</code></p>
+    <p><strong>Custom Examples</strong>:</p>
+    <ul>
+        <li><code>Extract the invoice number, amount, and due date</code></li>
+        <li><code>List all action items mentioned</code></li>
+        <li><code>Identify the sender's main request</code></li>
+    </ul>
+
+    <h4>Max Response Tokens</h4>
+    <ul>
+        <li><strong>Range</strong>: 20-500</li>
+        <li><strong>Default</strong>: 100</li>
+        <li><strong>Impact</strong>: Higher = more detailed but more expensive</li>
+    </ul>
+
+    <h4>Enable AI Processing</h4>
+    <p>Toggle to enable/disable AI summaries globally. When disabled, emails are still saved but no AI summaries are generated.</p>
+
+    <h3>Rules Processing Mode</h3>
+
+    <h4>Catch-All Mode (Default: Enabled)</h4>
+    <ul>
+        <li><strong>Enabled</strong>: Process emails matching rules PLUS all other emails with default settings</li>
+        <li><strong>Disabled</strong>: Process ONLY emails that match specific rules</li>
+    </ul>
+
+    <h3>What to Save</h3>
+
+    <h4>Save Email Body</h4>
+    <p>Choose whether to save the email content itself (separate from attachments).</p>
+    <p><strong>Formats</strong>:</p>
+    <ul>
+        <li>PDF</li>
+        <li>HTML</li>
+        <li>Plain Text</li>
+        <li>All formats</li>
+    </ul>
+
+    <h4>Save Attachments</h4>
+    <p>Toggle whether to save email attachments to Drive.</p>
+
+    <h3>Processing Settings</h3>
+
+    <h4>Days to Look Back</h4>
+    <p>How many days of emails to check (default: 7 days).</p>
+
+    <h4>Batch Size</h4>
+    <p>Number of emails to process per run (default: 10).</p>
+
+    <h4>Attachment Filters</h4>
+    <ul>
+        <li><strong>Min Size</strong>: Minimum attachment size in KB</li>
+        <li><strong>Max Size</strong>: Maximum attachment size in MB</li>
+        <li><strong>Allowed Extensions</strong>: Only save specific file types (e.g., <code>pdf,xlsx,docx</code>)</li>
+    </ul>
+</section>
+
+<section id="rules-engine">
+    <h2>4. Rules Engine</h2>
+
+    <h3>What Are Rules?</h3>
+    <p>Rules are independent workflows that let you process different types of emails differently. Each rule can have:</p>
+    <ul>
+        <li>Its own Gmail filter</li>
+        <li>Custom destination folder/sheet</li>
+        <li>Custom AI prompt</li>
+        <li>Different priority</li>
+    </ul>
+
+    <h3>How Rules Work</h3>
+    <ol>
+        <li><strong>Rules are processed in priority order</strong> (1 = highest priority)</li>
+        <li><strong>Each email is processed by the first matching rule only</strong></li>
+        <li><strong>Emails that don't match any rule</strong>:
+            <ul>
+                <li>Processed by catch-all (if enabled)</li>
+                <li>Ignored (if catch-all disabled)</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Creating a Rule</h3>
+
+    <h4>Basic Settings</h4>
+
+    <p><strong>Rule Name</strong> <span class="required">(Required)</span></p>
+    <ul>
+        <li>Descriptive name for this workflow</li>
+        <li>Examples: "Client Invoices", "Team Reports", "Receipts"</li>
+    </ul>
+
+    <p><strong>Gmail Filter</strong> <span class="required">(Required)</span></p>
+    <ul>
+        <li>Use Gmail search syntax (same as Gmail search box)</li>
+        <li>Examples:
+            <ul>
+                <li><code>from:client@company.com has:attachment</code></li>
+                <li><code>subject:invoice has:attachment</code></li>
+                <li><code>label:important from:boss@company.com</code></li>
+                <li><code>has:attachment newer_than:7d</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <p><strong>Priority</strong> <span class="required">(Required, Default: 999)</span></p>
+    <ul>
+        <li>Range: 1-999</li>
+        <li>Lower number = higher priority</li>
+        <li>Examples:
+            <ul>
+                <li><code>1</code> = Highest (processed first)</li>
+                <li><code>50</code> = High</li>
+                <li><code>500</code> = Medium</li>
+                <li><code>999</code> = Low (processed last)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h4>Destinations (Optional)</h4>
+
+    <p><strong>Drive Folder URL</strong></p>
+    <ul>
+        <li>Leave blank to use global default</li>
+        <li>Paste full Drive folder URL to use different folder</li>
+        <li>Supports Shared Drives</li>
+    </ul>
+
+    <p><strong>Spreadsheet URL</strong></p>
+    <ul>
+        <li>Leave blank to use current spreadsheet</li>
+        <li>Paste full spreadsheet URL including <code>#gid=</code> to target specific sheet/tab</li>
+        <li>Example: <code>https://docs.google.com/spreadsheets/d/ABC.../edit#gid=1774276023</code></li>
+        <li>The system automatically extracts the spreadsheet ID and sheet gid</li>
+    </ul>
+
+    <h4>AI Settings (Optional)</h4>
+
+    <p><strong>Custom AI Prompt</strong></p>
+    <ul>
+        <li>Leave blank to use global default prompt</li>
+        <li>Specify custom prompt for this rule's emails</li>
+        <li>Examples:
+            <ul>
+                <li>For invoices: <code>Extract invoice number, total amount, and due date</code></li>
+                <li>For receipts: <code>Extract merchant name, date, and total amount</code></li>
+                <li>For reports: <code>Summarize key findings and recommendations</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Rule Examples</h3>
+
+    <h4>Example 1: Client Invoices</h4>
+    <pre>Name: Client Invoices
+Gmail Filter: from:client@company.com subject:invoice
+Priority: 10
+Drive Folder: [Custom folder for invoices]
+Spreadsheet: [Sheet with "Invoices" tab, using #gid]
+AI Prompt: Extract invoice number, amount, and due date</pre>
+
+    <h4>Example 2: Team Reports</h4>
+    <pre>Name: Team Reports
+Gmail Filter: from:team@company.com label:reports
+Priority: 50
+Drive Folder: [Default]
+Spreadsheet: [Default]
+AI Prompt: Summarize key findings and action items</pre>
+
+    <h4>Example 3: Receipts</h4>
+    <pre>Name: Receipts
+Gmail Filter: subject:receipt OR subject:payment
+Priority: 100
+Drive Folder: [Receipts folder]
+Spreadsheet: [Expenses sheet]
+AI Prompt: Extract merchant, date, and total amount</pre>
+
+    <h3>Managing Rules</h3>
+
+    <h4>Edit Rule</h4>
+    <ol>
+        <li>Go to <strong>Manage Rules</strong></li>
+        <li>Click <strong>✏️ Edit</strong> on any rule</li>
+        <li>Modify fields in the form</li>
+        <li>Click <strong>Save Rule</strong></li>
+    </ol>
+
+    <h4>Enable/Disable Rule</h4>
+    <ul>
+        <li>Click <strong>Disable</strong> to pause a rule without deleting it</li>
+        <li>Click <strong>Enable</strong> to reactivate a paused rule</li>
+        <li>Disabled rules show as ⏸️ (paused)</li>
+    </ul>
+
+    <h4>Delete Rule</h4>
+    <ol>
+        <li>Click <strong>🗑️ Delete</strong> on any rule</li>
+        <li>Confirm deletion</li>
+        <li>Rule is permanently removed (cannot be undone)</li>
+    </ol>
+
+    <h4>View Rule Statistics</h4>
+    <p>Each rule displays:</p>
+    <ul>
+        <li><strong>Processed</strong>: Total emails processed by this rule</li>
+        <li><strong>Last run</strong>: When the rule last processed an email</li>
+        <li><strong>Priority</strong>: Rule's priority level</li>
+    </ul>
+</section>
+
+<section id="processing">
+    <h2>5. Processing Emails</h2>
+
+    <h3>Manual Processing</h3>
+
+    <h4>Process New Emails Now</h4>
+    <ul>
+        <li>Menu: <strong>SaveMyAttachments</strong> → <strong>📧 Process New Emails Now</strong></li>
+        <li>Processes emails matching your rules + catch-all (if enabled)</li>
+        <li>Runs once immediately</li>
+        <li>Shows progress and results</li>
+    </ul>
+
+    <h4>Stop Processing</h4>
+    <ul>
+        <li>Menu: <strong>SaveMyAttachments</strong> → <strong>🛑 Stop Processing</strong></li>
+        <li>Stops currently running email processing</li>
+        <li>Completes current email before stopping</li>
+        <li>Useful if processing is taking too long</li>
+    </ul>
+
+    <h3>Test Mode</h3>
+
+    <h4>Process Most Recent Email (Test)</h4>
+    <ul>
+        <li>Menu: <strong>SaveMyAttachments</strong> → <strong>🔧 Tools</strong> → <strong>🧪 Process Most Recent Email (Test)</strong></li>
+        <li>Processes just your most recent email</li>
+        <li>Great for testing configuration before automating</li>
+        <li>Ignores "already processed" checks</li>
+    </ul>
+
+    <h3>Automated Processing</h3>
+    <p>Enable automatic processing in <strong>Configure Settings</strong> → <strong>Automation</strong>:</p>
+    <ul>
+        <li>Every 15 minutes</li>
+        <li>Every 30 minutes</li>
+        <li>Every hour</li>
+    </ul>
+    <p>The system runs in the background and processes new emails automatically.</p>
+</section>
+
+<section id="data">
+    <h2>6. Understanding Your Data</h2>
+
+    <h3>Google Sheets Structure</h3>
+    <p>Each processed attachment creates one row:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Column</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Message ID</strong></td>
+                <td>Hidden column - unique email identifier</td>
+            </tr>
+            <tr>
+                <td><strong>Date</strong></td>
+                <td>Email date/time</td>
+            </tr>
+            <tr>
+                <td><strong>Sender</strong></td>
+                <td>Email sender address</td>
+            </tr>
+            <tr>
+                <td><strong>Subject</strong></td>
+                <td>Email subject line</td>
+            </tr>
+            <tr>
+                <td><strong>Attachment</strong></td>
+                <td>Clickable link to file in Drive</td>
+            </tr>
+            <tr>
+                <td><strong>AI Summary</strong></td>
+                <td>AI-generated summary (if enabled)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p><strong>Features</strong>:</p>
+    <ul>
+        <li><strong>Clickable Links</strong>: Click attachment name to open in Drive</li>
+        <li><strong>Sortable</strong>: Sort by date, sender, subject</li>
+        <li><strong>Searchable</strong>: Use Sheets' search (Ctrl+F) to find emails</li>
+        <li><strong>Newest First</strong>: Most recent emails appear at top (configurable)</li>
+    </ul>
+
+    <h3>Google Drive Organization</h3>
+
+    <p><strong>Folder Structure</strong>:</p>
+    <pre>Your Drive Folder/
+├── email_2024-11-06_Subject_Line.pdf
+├── email_2024-11-06_Subject_Line.html
+├── attachment_file1.pdf
+├── attachment_file2.xlsx
+└── ...</pre>
+
+    <p><strong>File Naming</strong>:</p>
+    <ul>
+        <li>Email bodies: <code>email_YYYY-MM-DD_Subject.pdf</code></li>
+        <li>Attachments: Original filename preserved</li>
+        <li>Duplicates: Timestamp appended <code>_YYYYMMDD_HHmmss</code></li>
+    </ul>
+</section>
+
+<section id="tools">
+    <h2>7. Tools &amp; Utilities</h2>
+
+    <h3>View Progress</h3>
+    <ul>
+        <li>Shows current processing status</li>
+        <li>Email counts by rule</li>
+        <li>Last processing time</li>
+    </ul>
+
+    <h3>View Diagnostics</h3>
+    <ul>
+        <li>System health check</li>
+        <li>Configuration validation</li>
+        <li>Common issues detection</li>
+    </ul>
+
+    <h3>View Processed Count</h3>
+    <ul>
+        <li>Total emails processed</li>
+        <li>Breakdown by rule</li>
+        <li>Historical statistics</li>
+    </ul>
+
+    <h3>View Cost Estimates</h3>
+    <ul>
+        <li>Estimated OpenRouter API costs</li>
+        <li>Cost per email by model</li>
+        <li>Monthly projections</li>
+    </ul>
+
+    <h3>Export Logs to Drive</h3>
+    <ul>
+        <li>Exports full system logs</li>
+        <li>Shareable link generated</li>
+        <li>Useful for support/debugging</li>
+    </ul>
+
+    <h3>Test OpenRouter Connection</h3>
+    <ul>
+        <li>Verifies API key is valid</li>
+        <li>Tests connectivity</li>
+        <li>Shows available models</li>
+    </ul>
+
+    <h3>Clear Functions</h3>
+
+    <h4>Clear Processed Tracking Only</h4>
+    <ul>
+        <li>Clears the list of processed email IDs</li>
+        <li>Keeps all other settings and rules</li>
+        <li>Emails will be reprocessed on next run</li>
+    </ul>
+
+    <h4>Clear Everything &amp; Start Fresh</h4>
+    <ul>
+        <li>Clears tracking + sheet contents</li>
+        <li>Keeps settings and rules</li>
+        <li>Fresh start while preserving configuration</li>
+    </ul>
+
+    <h4>Nuclear Clear (Force Reset)</h4>
+    <ul>
+        <li>Most aggressive reset</li>
+        <li>Clears tracking, resets rule statistics</li>
+        <li>Preserves rules and settings</li>
+        <li>Use only if having issues</li>
+    </ul>
+</section>
+
+<section id="troubleshooting">
+    <h2>8. Troubleshooting</h2>
+
+    <h3>Emails Not Being Processed</h3>
+
+    <h4>Check 1: Gmail Filter</h4>
+    <ul>
+        <li>Test your Gmail filter directly in Gmail search box</li>
+        <li>Make sure emails match the filter syntax</li>
+        <li>Use <strong>Tools</strong> → <strong>Process Most Recent Email (Test)</strong> to debug</li>
+    </ul>
+
+    <h4>Check 2: Already Processed</h4>
+    <ul>
+        <li>System tracks processed emails to avoid duplicates</li>
+        <li>Use <strong>Clear Processed Tracking Only</strong> to reset tracking</li>
+    </ul>
+
+    <h4>Check 3: Rules Order</h4>
+    <ul>
+        <li>Remember: First matching rule wins</li>
+        <li>Check rule priorities</li>
+        <li>Higher priority rules (lower number) are checked first</li>
+    </ul>
+
+    <h4>Check 4: Catch-All Mode</h4>
+    <ul>
+        <li>If disabled, only rule-matched emails are processed</li>
+        <li>Enable in <strong>Configure Settings</strong> → <strong>Rules Processing Mode</strong></li>
+    </ul>
+
+    <h3>AI Summaries Not Working</h3>
+
+    <h4>Check 1: API Key</h4>
+    <ul>
+        <li>Verify API key in settings</li>
+        <li>Use <strong>Test OpenRouter Connection</strong> to validate</li>
+        <li>Check balance at <a href="https://openrouter.ai" target="_blank">openrouter.ai</a></li>
+    </ul>
+
+    <h4>Check 2: AI Enabled</h4>
+    <ul>
+        <li>Check <strong>Enable AI Processing</strong> toggle in settings</li>
+        <li>Verify model is selected</li>
+    </ul>
+
+    <h4>Check 3: Credits</h4>
+    <ul>
+        <li>Ensure OpenRouter account has credits</li>
+        <li>Add credits at <a href="https://openrouter.ai" target="_blank">openrouter.ai</a></li>
+    </ul>
+
+    <h3>Files Not Saving to Drive</h3>
+
+    <h4>Check 1: Folder Permissions</h4>
+    <ul>
+        <li>Make sure you own the Drive folder</li>
+        <li>Check folder hasn't been deleted</li>
+        <li>Verify folder URL in settings</li>
+    </ul>
+
+    <h4>Check 2: Attachment Size</h4>
+    <ul>
+        <li>Check min/max attachment size settings</li>
+        <li>Large attachments may timeout</li>
+    </ul>
+
+    <h4>Check 3: File Type Filters</h4>
+    <ul>
+        <li>Verify allowed extensions settings</li>
+        <li>Some file types may be filtered out</li>
+    </ul>
+
+    <h3>Sheet Not Updating</h3>
+
+    <h4>Check 1: Sheet Permissions</h4>
+    <ul>
+        <li>Make sure sheet hasn't been deleted</li>
+        <li>Verify you have edit permissions</li>
+        <li>Check correct sheet is specified</li>
+    </ul>
+
+    <h4>Check 2: Sheet Tab</h4>
+    <ul>
+        <li>If using <code>#gid=</code> in URL, verify tab exists</li>
+        <li>Check tab hasn't been renamed/deleted</li>
+    </ul>
+</section>
+
+<section id="faq">
+    <h2>9. FAQ</h2>
+
+    <h3>General Questions</h3>
+
+    <h4>Q: How much does it cost?</h4>
+    <p><strong>A:</strong> SaveMyAttachments is available on the Google Workspace Marketplace with subscription pricing. In addition to the subscription fee, you pay for your own OpenRouter API usage (typically $0.001-0.03 per email depending on model choice).</p>
+
+    <h4>Q: Is my data secure?</h4>
+    <p><strong>A:</strong> Yes. Your API key is stored in Google's secure PropertiesService. Email content is sent directly to OpenRouter (your account) for AI processing. We never see your emails or data.</p>
+
+    <h4>Q: Can I use this with a team?</h4>
+    <p><strong>A:</strong> Yes! Use Shared Drives for collaboration. Each team member needs their own OpenRouter API key.</p>
+
+    <h4>Q: How many emails can I process?</h4>
+    <p><strong>A:</strong> No hard limits. The system processes emails in batches to stay within Google Apps Script execution limits (typically 10-20 emails per run).</p>
+
+    <h4>Q: Can I process old emails?</h4>
+    <p><strong>A:</strong> Yes! Adjust <strong>Days to Look Back</strong> in settings. But remember: old emails will be processed as "new" if you haven't processed them before.</p>
+
+    <h3>Rules Questions</h3>
+
+    <h4>Q: What happens if an email matches multiple rules?</h4>
+    <p><strong>A:</strong> Only the first matching rule (by priority order) processes the email. If you want both rules to process it, you'll need to manually trigger or adjust filters.</p>
+
+    <h4>Q: Can rules have the same priority?</h4>
+    <p><strong>A:</strong> Yes, but processing order is unpredictable. Best practice: use unique priorities.</p>
+
+    <h4>Q: Do rules affect catch-all processing?</h4>
+    <p><strong>A:</strong> No. Rules are checked first, then catch-all processes remaining emails (if enabled).</p>
+
+    <h4>Q: Can I have rules without destinations?</h4>
+    <p><strong>A:</strong> Yes. Leave destinations blank to use global defaults.</p>
+
+    <h3>Technical Questions</h3>
+
+    <h4>Q: How do I know which rule processed an email?</h4>
+    <p><strong>A:</strong> Check the <strong>Manage Rules</strong> panel - each rule shows how many emails it has processed.</p>
+
+    <h4>Q: Can I export/import rules?</h4>
+    <p><strong>A:</strong> Not currently. This feature is planned for future releases.</p>
+
+    <h4>Q: What happens if processing times out?</h4>
+    <p><strong>A:</strong> Processing stops after 5 minutes (Google Apps Script limit). Unprocessed emails will be processed on the next run.</p>
+
+    <h4>Q: Can I process specific emails only?</h4>
+    <p><strong>A:</strong> Yes! Use Gmail filters to target specific emails. Make catch-all mode disabled to process ONLY rule-matched emails.</p>
+
+    <h4>Q: How do I upgrade to a better AI model?</h4>
+    <p><strong>A:</strong> Just change the model in <strong>Configure Settings</strong> → <strong>AI Model</strong>. New emails will use the new model.</p>
+</section>
+
+<section id="support">
+    <h2>Support</h2>
+    <p>For issues, questions, or feature requests:</p>
+    <ul>
+        <li>Check this manual first</li>
+        <li>Use <strong>Tools</strong> → <strong>Export Logs to Drive</strong> to generate diagnostic logs</li>
+        <li>Email support with your logs</li>
+    </ul>
+</section>
+
+<section id="appendix">
+    <h2>Appendix: Gmail Filter Examples</h2>
+
+    <h3>Basic Filters</h3>
+    <pre>has:attachment                          # All emails with attachments
+from:sender@example.com                 # From specific sender
+subject:invoice                         # Subject contains "invoice"
+label:important                         # Has "important" label</pre>
+
+    <h3>Advanced Filters</h3>
+    <pre>from:client@company.com has:attachment newer_than:7d
+# From client, with attachment, last 7 days
+
+subject:(invoice OR receipt) has:attachment
+# Subject contains "invoice" or "receipt", with attachment
+
+from:*@company.com label:team has:attachment
+# From anyone at company.com domain, labeled "team"
+
+has:attachment larger:5MB
+# Attachments larger than 5MB
+
+from:boss@company.com (subject:urgent OR subject:important)
+# From boss, subject contains "urgent" or "important"</pre>
+
+    <h3>Combining Filters</h3>
+    <pre>from:client@company.com subject:invoice has:attachment newer_than:30d</pre>
+
+    <div class="note">
+        <strong>Tip:</strong> Test filters in Gmail first. Copy your filter to Gmail search box to see what emails it matches.
+    </div>
+</section>
+
+</main>
+
+<footer style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #e0e0e0; color: #666; font-size: 0.9em;">
+    <p><strong>Version:</strong> 1.0 | <strong>Last Updated:</strong> November 2025</p>
+</footer>
+
+</body>
+</html>

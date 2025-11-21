@@ -7,6 +7,53 @@ This guide walks you through setting up the Google Cloud Project and OAuth conse
 
 ---
 
+## 🔄 Current Session Status (2025-11-08)
+
+**Development Account:** dp@databeacon.aero (will transfer to david@thecoralblock.com later)
+
+**Completed:**
+- ✅ Created Google Cloud Project
+  - Project ID: `savemyattachments`
+  - Project Number: (recorded in session)
+- ✅ Enabled required APIs
+  - Gmail API ✓
+  - Google Drive API ✓
+  - Google Sheets API ✓
+- ✅ OAuth Consent Screen - App Information section
+  - App name: SaveMyAttachments
+  - User support email: dp@databeacon.aero
+  - Home page: https://thecoralblock.pages.dev
+  - Privacy policy: https://thecoralblock.pages.dev/docs/privacy-policy.html
+  - Terms of service: https://thecoralblock.pages.dev/docs/terms-of-service.html
+  - Authorized domains: thecoralblock.pages.dev, thecoralblock.com
+- ✅ OAuth Consent Screen - Branding section (saved, logo skipped for now)
+
+**Currently Working On:**
+- 🔄 OAuth Consent Screen - Scopes section
+  - **Issue:** After completing Branding section, need to navigate to Scopes page
+  - **Next step:** Click "SAVE AND CONTINUE" at bottom of Branding page, OR navigate via "EDIT APP" → Step 2: Scopes
+  - **Goal:** Add 5 required scopes (gmail.readonly, gmail.modify, drive.file, spreadsheets, script.external_request)
+
+**Still To Do:**
+- ⏳ OAuth Consent Screen - Test Users section
+- ⏳ OAuth Consent Screen - Summary & save
+- ⏳ Link Apps Script project to Cloud Project (need Project Number)
+- ⏳ Update appsscript.json manifest
+- ⏳ Test OAuth flow
+- ⏳ Wait for domain transfer (thecoralblock.com pending, 3-7 days)
+- ⏳ Transfer ownership to david@thecoralblock.com (after email ready)
+- ⏳ Update OAuth Consent Screen with custom domain email
+- ⏳ Prepare OAuth verification materials (video, documentation)
+- ⏳ Submit for OAuth verification
+
+**Parallel Pending Tasks:**
+- ⏳ Domain transfer: thecoralblock.com (Squarespace → Cloudflare) - 3-7 days
+- ⏳ Add custom domain to Cloudflare Pages (after transfer completes)
+- ⏳ Configure iCloud+ custom email for thecoralblock.com (after transfer)
+- ⏳ Create email addresses: david@, support@, privacy@
+
+---
+
 ## Overview
 
 To publish SaveMyAttachments on Google Workspace Marketplace, you need:

@@ -228,7 +228,7 @@
       color: #155724;
       padding: 12px;
       border-radius: 4px;
-      margin-bottom: 20px;
+      margin-top: 20px;
       display: none;
     }
 
@@ -237,7 +237,7 @@
       color: #721c24;
       padding: 12px;
       border-radius: 4px;
-      margin-bottom: 20px;
+      margin-top: 20px;
       display: none;
     }
   </style>
@@ -247,8 +247,21 @@
     <h1>⚙️ SaveMyAttachments Configuration</h1>
     <p class="subtitle">Configure all settings in one place</p>
 
-    <div class="success-message" id="successMessage"></div>
-    <div class="error-message" id="errorMessage"></div>
+    <!-- Rules Processing Mode -->
+    <div class="section">
+      <div class="section-title">📋 Rules Processing Mode</div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="catchAllEnabled" checked>
+        <label for="catchAllEnabled" class="checkbox-label">
+          Process all emails (Catch-All mode)
+          <div class="help-text">
+            <strong>Checked (default):</strong> Process emails matching rules PLUS all other emails with default settings.<br>
+            <strong>Unchecked:</strong> Process ONLY emails that match specific rules. Unmatched emails will be ignored.
+          </div>
+        </label>
+      </div>
+    </div>
 
     <!-- Google Drive Configuration -->
     <div class="section">
@@ -355,7 +368,7 @@
       <div class="section-title">🤖 AI Summarization</div>
 
       <div class="checkbox-group">
-        <input type="checkbox" id="enableAI" checked>
+        <input type="checkbox" id="enableAI">
         <label for="enableAI" class="checkbox-label">
           Enable AI-powered email summaries
           <div class="help-text">Uses OpenRouter.ai to generate intelligent summaries of email content</div>
@@ -385,9 +398,9 @@
         </div>
 
         <div class="form-group">
-          <label for="aiPrompt">AI Summary Prompt</label>
+          <label for="aiPrompt">Default AI Prompt</label>
           <textarea id="aiPrompt">Summarize this email in 5-10 words, focusing on the main action or topic:</textarea>
-          <div class="help-text">What should the AI answer about each email?</div>
+          <div class="help-text">Default prompt for all emails. Rules can override this with custom prompts.</div>
         </div>
 
         <div class="form-group">
@@ -467,6 +480,9 @@
       <button type="button" class="btn-primary" onclick="saveSettings()">💾 Save Configuration</button>
     </div>
 
+    <div class="success-message" id="successMessage"></div>
+    <div class="error-message" id="errorMessage"></div>
+
     <div class="loading" id="loading">
       <div class="spinner"></div>
       <div>Saving configuration...</div>
@@ -503,7 +519,7 @@
       document.getElementById('disallowedExtensions').value = config.disallowedExtensions || '';
 
       // AI Settings
-      document.getElementById('enableAI').checked = config.enableAI !== false; // Default true
+      document.getElementById('enableAI').checked = config.enableAI === true; // Default false
       document.getElementById('aiModel').value = config.model || 'anthropic/claude-3.5-sonnet';
       document.getElementById('aiPrompt').value = config.summaryPrompt || 'Summarize this email in 5-10 words, focusing on the main action or topic:';
       document.getElementById('maxTokens').value = config.maxTokens || 100;
@@ -513,6 +529,7 @@
       document.getElementById('daysBack').value = config.daysBack || 7;
       document.getElementById('emailFilter').value = config.emailFilter || '';
       document.getElementById('newestFirst').checked = config.newestFirst !== false;
+      document.getElementById('catchAllEnabled').checked = config.catchAllEnabled !== false;
 
       // Automation
       document.getElementById('automationEnabled').checked = config.automationEnabled === 'true';
@@ -574,6 +591,7 @@
         daysBack: parseInt(document.getElementById('daysBack').value),
         emailFilter: document.getElementById('emailFilter').value,
         newestFirst: document.getElementById('newestFirst').checked,
+        catchAllEnabled: document.getElementById('catchAllEnabled').checked,
 
         // Automation
         automationEnabled: document.getElementById('automationEnabled').checked,
@@ -685,7 +703,7 @@
 
       google.script.run
         .withSuccessHandler(function(result) {
-          document.getElementById('folderId').value = result.folderId;
+          document.getElementById('folderId').value = result.folderUrl;
           showSuccess('✅ Created folder: ' + result.folderName);
           button.disabled = false;
           button.textContent = '📁 Create New Folder';

@@ -229,10 +229,37 @@ function nuclearClearEverything() {
     Logger.log('Cache clear error: ' + e.toString());
   }
 
-  // Delete all SaveMe-related properties
+  // Reset rule statistics (but keep rules themselves)
+  try {
+    var rulesJson = props.getProperty('RULES');
+    if (rulesJson) {
+      var rules = JSON.parse(rulesJson);
+      var resetCount = 0;
+      for (var i = 0; i < rules.length; i++) {
+        rules[i].totalProcessed = 0;
+        rules[i].lastRun = null;
+        resetCount++;
+      }
+      props.setProperty('RULES', JSON.stringify(rules));
+      Logger.log('Reset statistics for ' + resetCount + ' rules');
+    }
+  } catch (e) {
+    Logger.log('Error resetting rule statistics: ' + e.toString());
+  }
+
+  // Delete all SaveMe-related properties (except RULES and config)
   var allProps = props.getProperties();
   var deletedCount = 0;
   for (var key in allProps) {
+    // Keep RULES and essential config
+    if (key === 'RULES' || key === 'OPENROUTER_API_KEY' || key === 'DRIVE_FOLDER_ID' ||
+        key === 'MODEL' || key === 'DAYS_BACK' || key === 'BATCH_SIZE' ||
+        key === 'ENABLE_AI' || key === 'SUMMARY_PROMPT' || key === 'SAVE_EMAIL_BODY' ||
+        key === 'SAVE_ATTACHMENTS' || key === 'CATCH_ALL_ENABLED') {
+      continue; // Skip - keep these
+    }
+
+    // Delete processing tracking properties
     if (key.indexOf('PROCESSED') !== -1 || key.indexOf('CACHE_KEYS') !== -1 || key.indexOf('SaveMe') !== -1) {
       props.deleteProperty(key);
       deletedCount++;
@@ -241,7 +268,7 @@ function nuclearClearEverything() {
   }
 
   Logger.log('Deleted ' + deletedCount + ' properties total');
-  Logger.log('✓ Nuclear clear complete');
+  Logger.log('✓ Nuclear clear complete (rules and config preserved)');
 
   return deletedCount;
 }

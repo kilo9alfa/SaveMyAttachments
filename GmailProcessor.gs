@@ -4,7 +4,448 @@
  */
 
 /**
- * Process new emails in batch (main automated function)
+ * Process new emails using rules engine (primary function)
+ * Calls migration automatically, processes all enabled rules, then catch-all if enabled
+ *
+ * @return {Object} Result object with stats and per-rule breakdown
+ */
+function processNewEmailsWithRules() {
+  // Track execution time (Apps Script has 6-minute limit)
+  var startTime = new Date().getTime();
+  var MAX_EXECUTION_TIME = 5 * 60 * 1000; // 5 minutes
+
+  var totalStats = {
+    processed: 0,
+    skipped: 0,
+    errors: 0,
+    found: 0,
+    errorMessages: [],
+    stoppedEarly: false,
+    stoppedReason: null,
+    ruleBreakdown: {},
+    executionTime: 0
+  };
+
+  try {
+    Logger.log('=== PROCESSING WITH RULES ENGINE ===');
+
+    // Auto-migrate from old config if needed
+    migrateToRulesIfNeeded();
+
+    // Get global config
+    var globalConfig = getConfig();
+
+    // Track which messages have been processed (to avoid duplicates across rules)
+    var processedMessageIds = [];
+
+    // Get all enabled rules, sorted by priority
+    var rules = getAllRules()
+      .filter(function(rule) { return rule.enabled; })
+      .sort(function(a, b) { return (a.order || 999) - (b.order || 999); });
+
+    Logger.log('Found ' + rules.length + ' enabled rule(s)');
+
+    // STEP 1: Process each rule in order
+    for (var i = 0; i < rules.length; i++) {
+      // Check if user requested stop
+      if (shouldStopProcessing()) {
+        totalStats.stoppedEarly = true;
+        totalStats.stoppedReason = 'Stopped by user request';
+        break;
+      }
+
+      // Check execution time
+      var elapsedTime = new Date().getTime() - startTime;
+      if (elapsedTime > MAX_EXECUTION_TIME) {
+        Logger.log('⏱️ Execution time limit approaching, stopping rule processing');
+        totalStats.stoppedEarly = true;
+        totalStats.stoppedReason = 'Execution time limit (5 minutes)';
+        break;
+      }
+
+      var rule = rules[i];
+      Logger.log('\n--- Processing Rule: ' + rule.name + ' ---');
+
+      var ruleStats = processRule(rule, globalConfig, processedMessageIds, startTime, MAX_EXECUTION_TIME);
+
+      // Add to global stats
+      totalStats.found += ruleStats.found;
+      totalStats.processed += ruleStats.processed;
+      totalStats.skipped += ruleStats.skipped;
+      totalStats.errors += ruleStats.errors;
+      totalStats.ruleBreakdown[rule.name] = ruleStats;
+
+      if (ruleStats.errorMessages.length > 0) {
+        totalStats.errorMessages = totalStats.errorMessages.concat(ruleStats.errorMessages);
+      }
+
+      if (ruleStats.stoppedEarly) {
+        totalStats.stoppedEarly = true;
+        totalStats.stoppedReason = ruleStats.stoppedReason;
+        break; // Stop processing remaining rules
+      }
+
+      // Update rule statistics
+      if (ruleStats.processed > 0) {
+        updateRuleStats(rule.id, ruleStats.processed);
+      }
+    }
+
+    // STEP 2: Process catch-all (if enabled and time permits)
+    if (globalConfig.catchAllEnabled !== false) { // Default is true
+      var elapsedTime = new Date().getTime() - startTime;
+      if (elapsedTime < MAX_EXECUTION_TIME) {
+        Logger.log('\n--- Processing Catch-All (unmatched emails) ---');
+
+        var catchAllStats = processCatchAll(globalConfig, processedMessageIds, startTime, MAX_EXECUTION_TIME);
+
+        totalStats.found += catchAllStats.found;
+        totalStats.processed += catchAllStats.processed;
+        totalStats.skipped += catchAllStats.skipped;
+        totalStats.errors += catchAllStats.errors;
+        totalStats.ruleBreakdown['Catch-All'] = catchAllStats;
+
+        if (catchAllStats.errorMessages.length > 0) {
+          totalStats.errorMessages = totalStats.errorMessages.concat(catchAllStats.errorMessages);
+        }
+
+        if (catchAllStats.stoppedEarly) {
+          totalStats.stoppedEarly = true;
+          totalStats.stoppedReason = catchAllStats.stoppedReason;
+        }
+      } else {
+        Logger.log('⏱️ No time remaining for catch-all processing');
+        totalStats.stoppedEarly = true;
+        totalStats.stoppedReason = 'Execution time limit (5 minutes)';
+      }
+    } else {
+      Logger.log('\n--- Catch-All Disabled ---');
+      Logger.log('Only rule-matched emails will be processed');
+    }
+
+    // Calculate total execution time
+    totalStats.executionTime = Math.round((new Date().getTime() - startTime) / 1000);
+
+    Logger.log('\n=== RULES ENGINE PROCESSING COMPLETE ===');
+    Logger.log('Total execution time: ' + totalStats.executionTime + ' seconds');
+    Logger.log('Total found: ' + totalStats.found);
+    Logger.log('Total processed: ' + totalStats.processed);
+    Logger.log('Total skipped: ' + totalStats.skipped);
+    Logger.log('Total errors: ' + totalStats.errors);
+
+    if (totalStats.stoppedEarly) {
+      Logger.log('⚠️ STOPPED EARLY: ' + totalStats.stoppedReason);
+    }
+
+    return totalStats;
+
+  } catch (e) {
+    Logger.log('Error in processNewEmailsWithRules: ' + e.toString());
+    totalStats.errors++;
+    totalStats.errorMessages.push('Fatal error: ' + e.message);
+    totalStats.executionTime = Math.round((new Date().getTime() - startTime) / 1000);
+    return totalStats;
+  }
+}
+
+/**
+ * Process emails for a specific rule
+ *
+ * @param {Object} rule - Rule object
+ * @param {Object} globalConfig - Global configuration
+ * @param {Array} processedMessageIds - Array of already processed message IDs (to avoid duplicates)
+ * @param {number} startTime - Processing start time
+ * @param {number} maxExecutionTime - Maximum execution time in ms
+ * @return {Object} Stats for this rule
+ */
+function processRule(rule, globalConfig, processedMessageIds, startTime, maxExecutionTime) {
+  var stats = {
+    found: 0,
+    processed: 0,
+    skipped: 0,
+    errors: 0,
+    errorMessages: [],
+    stoppedEarly: false,
+    stoppedReason: null
+  };
+
+  try {
+    // Merge rule config with global config
+    var config = mergeRuleWithGlobalConfig(rule, globalConfig);
+
+    // Build Gmail search query for this rule
+    var query = rule.gmailFilter || 'has:attachment';
+
+    // Add date range from global config
+    var daysBack = config.daysBack || 7;
+    query += ' newer_than:' + daysBack + 'd';
+
+    Logger.log('Rule Gmail query: ' + query);
+
+    // Search Gmail
+    var threads = GmailApp.search(query, 0, 50);
+
+    if (threads.length === 0) {
+      Logger.log('No emails found for this rule');
+      return stats;
+    }
+
+    Logger.log('Found ' + threads.length + ' thread(s) for rule: ' + rule.name);
+
+    // Reverse to process newest first
+    threads.reverse();
+
+    var maxEmails = config.batchSize || 20;
+    var processedCount = 0;
+
+    // Process each thread
+    for (var i = 0; i < threads.length; i++) {
+      // Check execution time
+      var elapsedTime = new Date().getTime() - startTime;
+      if (elapsedTime > maxExecutionTime) {
+        Logger.log('⏱️ Time limit reached during rule processing');
+        stats.stoppedEarly = true;
+        stats.stoppedReason = 'Execution time limit (5 minutes)';
+        break;
+      }
+
+      // Stop if batch limit reached
+      if (processedCount >= maxEmails) {
+        Logger.log('Reached batch limit for this rule (' + maxEmails + ')');
+        break;
+      }
+
+      var thread = threads[i];
+      var messages = thread.getMessages();
+      messages.reverse(); // Newest first
+
+      for (var j = 0; j < messages.length; j++) {
+        // Check if user requested stop
+        if (shouldStopProcessing()) {
+          stats.stoppedEarly = true;
+          stats.stoppedReason = 'Stopped by user request';
+          break;
+        }
+
+        // Check time again
+        var elapsedTime = new Date().getTime() - startTime;
+        if (elapsedTime > maxExecutionTime) {
+          stats.stoppedEarly = true;
+          stats.stoppedReason = 'Execution time limit (5 minutes)';
+          break;
+        }
+
+        if (processedCount >= maxEmails) {
+          break;
+        }
+
+        var message = messages[j];
+        var messageId = message.getId();
+
+        stats.found++;
+
+        // Skip if already processed by another rule in this run
+        if (processedMessageIds.indexOf(messageId) !== -1) {
+          Logger.log('  ⏭️ Already processed by previous rule: ' + messageId);
+          stats.skipped++;
+          continue;
+        }
+
+        // Skip if already processed in previous runs
+        if (isEmailProcessed(messageId)) {
+          Logger.log('  ❌ Already in tracking: ' + messageId);
+          stats.skipped++;
+          continue;
+        }
+
+        // Skip if already in sheet (check rule's specific sheet)
+        if (isEmailInSheet(messageId, config.sheetId)) {
+          Logger.log('  ❌ Already in sheet: ' + messageId);
+          stats.skipped++;
+          markEmailAsProcessed(messageId, message.getSubject());
+          continue;
+        }
+
+        Logger.log('  ✅ Processing: ' + message.getSubject());
+
+        try {
+          // Mark as processed BEFORE processing
+          markEmailAsProcessed(messageId, message.getSubject());
+          processedMessageIds.push(messageId); // Add to run-level tracking
+
+          // Process the email with merged config
+          var result = processEmail(message, config);
+
+          if (result.success) {
+            stats.processed++;
+            processedCount++;
+          } else {
+            stats.errors++;
+            stats.errorMessages.push(rule.name + ' - ' + message.getSubject() + ': ' + result.error);
+          }
+
+        } catch (e) {
+          Logger.log('  Error: ' + e.toString());
+          stats.errors++;
+          stats.errorMessages.push(rule.name + ' - ' + message.getSubject() + ': ' + e.message);
+        }
+      }
+
+      if (stats.stoppedEarly) {
+        break;
+      }
+    }
+
+    Logger.log('Rule "' + rule.name + '" - Processed: ' + stats.processed + ', Skipped: ' + stats.skipped + ', Errors: ' + stats.errors);
+
+  } catch (e) {
+    Logger.log('Error processing rule "' + rule.name + '": ' + e.toString());
+    stats.errors++;
+    stats.errorMessages.push('Rule error: ' + e.message);
+  }
+
+  return stats;
+}
+
+/**
+ * Process catch-all (emails not matched by any rule)
+ *
+ * @param {Object} globalConfig - Global configuration
+ * @param {Array} processedMessageIds - Array of message IDs already processed by rules
+ * @param {number} startTime - Processing start time
+ * @param {number} maxExecutionTime - Maximum execution time in ms
+ * @return {Object} Stats for catch-all
+ */
+function processCatchAll(globalConfig, processedMessageIds, startTime, maxExecutionTime) {
+  var stats = {
+    found: 0,
+    processed: 0,
+    skipped: 0,
+    errors: 0,
+    errorMessages: [],
+    stoppedEarly: false,
+    stoppedReason: null
+  };
+
+  try {
+    // Use global config for catch-all
+    var config = globalConfig;
+
+    // Build basic Gmail query (same as old single-config mode)
+    var query = buildSearchQuery(config);
+
+    Logger.log('Catch-all Gmail query: ' + query);
+
+    // Search Gmail
+    var threads = GmailApp.search(query, 0, 50);
+
+    if (threads.length === 0) {
+      Logger.log('No emails found for catch-all');
+      return stats;
+    }
+
+    Logger.log('Found ' + threads.length + ' thread(s) for catch-all');
+
+    threads.reverse();
+
+    var maxEmails = config.batchSize || 20;
+    var processedCount = 0;
+
+    for (var i = 0; i < threads.length; i++) {
+      var elapsedTime = new Date().getTime() - startTime;
+      if (elapsedTime > maxExecutionTime) {
+        Logger.log('⏱️ Time limit reached during catch-all processing');
+        stats.stoppedEarly = true;
+        stats.stoppedReason = 'Execution time limit (5 minutes)';
+        break;
+      }
+
+      if (processedCount >= maxEmails) {
+        break;
+      }
+
+      var thread = threads[i];
+      var messages = thread.getMessages();
+      messages.reverse();
+
+      for (var j = 0; j < messages.length; j++) {
+        var elapsedTime = new Date().getTime() - startTime;
+        if (elapsedTime > maxExecutionTime) {
+          stats.stoppedEarly = true;
+          stats.stoppedReason = 'Execution time limit (5 minutes)';
+          break;
+        }
+
+        if (processedCount >= maxEmails) {
+          break;
+        }
+
+        var message = messages[j];
+        var messageId = message.getId();
+
+        stats.found++;
+
+        // Skip if already processed by a rule in this run
+        if (processedMessageIds.indexOf(messageId) !== -1) {
+          Logger.log('  ⏭️ Already processed by rule: ' + messageId);
+          stats.skipped++;
+          continue;
+        }
+
+        // Skip if already processed in previous runs
+        if (isEmailProcessed(messageId)) {
+          stats.skipped++;
+          continue;
+        }
+
+        // Skip if already in sheet (check global sheet for catch-all)
+        if (isEmailInSheet(messageId, config.sheetId)) {
+          stats.skipped++;
+          markEmailAsProcessed(messageId, message.getSubject());
+          continue;
+        }
+
+        Logger.log('  ✅ Processing (catch-all): ' + message.getSubject());
+
+        try {
+          markEmailAsProcessed(messageId, message.getSubject());
+
+          var result = processEmail(message, config);
+
+          if (result.success) {
+            stats.processed++;
+            processedCount++;
+          } else {
+            stats.errors++;
+            stats.errorMessages.push('Catch-all - ' + message.getSubject() + ': ' + result.error);
+          }
+
+        } catch (e) {
+          Logger.log('  Error: ' + e.toString());
+          stats.errors++;
+          stats.errorMessages.push('Catch-all - ' + message.getSubject() + ': ' + e.message);
+        }
+      }
+
+      if (stats.stoppedEarly) {
+        break;
+      }
+    }
+
+    Logger.log('Catch-all - Processed: ' + stats.processed + ', Skipped: ' + stats.skipped + ', Errors: ' + stats.errors);
+
+  } catch (e) {
+    Logger.log('Error in catch-all processing: ' + e.toString());
+    stats.errors++;
+    stats.errorMessages.push('Catch-all error: ' + e.message);
+  }
+
+  return stats;
+}
+
+/**
+ * Process new emails in batch (legacy function for backwards compatibility)
+ * Used by old code paths and when no rules are configured
  *
  * @param {Object} config - Configuration object
  * @return {Object} Result object with stats
@@ -345,7 +786,7 @@ function processEmail(message, config) {
           summary: summary,
           attachmentName: file.name,
           attachmentUrl: file.url
-        });
+        }, config.sheetId, config.sheetGid);
 
         Logger.log('  ✅ Added row for: ' + file.name + ' (' + file.type + ')');
       }
@@ -362,7 +803,7 @@ function processEmail(message, config) {
           summary: summary,
           attachmentName: file.name,
           attachmentUrl: file.url
-        });
+        }, config.sheetId, config.sheetGid);
 
         Logger.log('  ✅ Added row for: ' + file.name + ' (' + file.type + ')');
       }

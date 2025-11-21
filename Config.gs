@@ -7,6 +7,9 @@
  * Get current configuration
  */
 function getConfig() {
+  // Auto-migrate to rules system if needed (runs once on first load)
+  migrateToRulesIfNeeded();
+
   var userProperties = PropertiesService.getUserProperties();
 
   return {
@@ -14,6 +17,7 @@ function getConfig() {
     apiKey: userProperties.getProperty('OPENROUTER_API_KEY'),
     model: userProperties.getProperty('MODEL') || 'anthropic/claude-3.5-sonnet',
     folderId: userProperties.getProperty('DRIVE_FOLDER_ID'),
+    sheetId: getCurrentSheet().getParent().getId(), // Current spreadsheet ID
     maxTokens: parseInt(userProperties.getProperty('MAX_TOKENS') || '100'),
 
     // What to Save (NEW)
@@ -37,7 +41,7 @@ function getConfig() {
     daysBack: parseInt(userProperties.getProperty('DAYS_BACK') || '7'),
 
     // AI settings
-    enableAI: userProperties.getProperty('ENABLE_AI') !== 'false', // Default true
+    enableAI: userProperties.getProperty('ENABLE_AI') === 'true', // Default false
     summaryPrompt: userProperties.getProperty('SUMMARY_PROMPT') || 'Summarize this email in 5-10 words, focusing on the main action or topic:',
     newestFirst: userProperties.getProperty('NEWEST_FIRST') !== 'false', // Default true
 
@@ -46,6 +50,9 @@ function getConfig() {
     senderFilter: userProperties.getProperty('SENDER_FILTER') || '',
     labelFilter: userProperties.getProperty('LABEL_FILTER') || '',
     minAttachmentSizeKB: parseInt(userProperties.getProperty('MIN_ATTACHMENT_SIZE_KB') || '5'),
+
+    // Rules Engine settings
+    catchAllEnabled: userProperties.getProperty('CATCH_ALL_ENABLED') !== 'false', // Default true
 
     // Notification settings
     notifyOnErrors: userProperties.getProperty('NOTIFY_ON_ERRORS') || 'false',
@@ -75,4 +82,25 @@ function getCurrentSheet() {
 function clearConfig() {
   PropertiesService.getUserProperties().deleteAllProperties();
   Logger.log('Configuration cleared');
+}
+
+/**
+ * Debug function to check current AI setting
+ */
+function debugAISetting() {
+  var userProperties = PropertiesService.getUserProperties();
+  var enableAI = userProperties.getProperty('ENABLE_AI');
+  var apiKey = userProperties.getProperty('OPENROUTER_API_KEY');
+
+  Logger.log('=== AI SETTINGS DEBUG ===');
+  Logger.log('ENABLE_AI property value: "' + enableAI + '" (type: ' + typeof enableAI + ')');
+  Logger.log('Has API key: ' + (apiKey ? 'Yes' : 'No'));
+  Logger.log('enableAI === "true": ' + (enableAI === 'true'));
+  Logger.log('Config result: ' + (enableAI === 'true'));
+
+  return {
+    rawValue: enableAI,
+    hasApiKey: !!apiKey,
+    evaluatesTo: enableAI === 'true'
+  };
 }

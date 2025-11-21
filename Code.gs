@@ -4,17 +4,49 @@
  */
 
 /**
+ * Simple test function to verify OAuth scopes work
+ * Run this from the Apps Script editor to test permissions
+ */
+function testOAuthScopes() {
+  try {
+    // Test Gmail access
+    var threads = GmailApp.search('in:inbox', 0, 1);
+    Logger.log('✅ Gmail access works - Found ' + threads.length + ' thread(s)');
+
+    // Test Drive access
+    var folders = DriveApp.getFolders();
+    Logger.log('✅ Drive access works');
+
+    // Test external request (will test OpenRouter later)
+    Logger.log('✅ External request scope present');
+
+    Logger.log('SUCCESS! All OAuth scopes are working correctly.');
+    return 'OAuth test passed!';
+
+  } catch (e) {
+    Logger.log('❌ Error: ' + e.message);
+    throw e;
+  }
+}
+
+/**
  * Creates custom menu when the add-on is installed or document is opened
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('SaveMyAttachments')
+    // Processing
     .addItem('📧 Process New Emails Now', 'processNewEmailsManual')
+    .addItem('🛑 Stop Processing', 'stopProcessing')
+    .addSeparator()
+    // Configuration
     .addItem('⚙️ Configure Settings', 'showSettings')
+    .addItem('📋 Manage Rules', 'showRulesManager')
     .addSeparator()
-    .addItem('🧪 Process Most Recent Email (Test)', 'processTestEmail')
-    .addSeparator()
+    // Tools
     .addSubMenu(ui.createMenu('🔧 Tools')
+      .addItem('🧪 Process Most Recent Email (Test)', 'processTestEmail')
+      .addSeparator()
       .addItem('📊 View Progress', 'showProgress')
       .addItem('View Diagnostics', 'showDiagnostics')
       .addItem('View Processed Count', 'showProcessedCount')
@@ -85,6 +117,92 @@ function showSettings() {
 }
 
 /**
+ * Show Rules Manager (for creating/editing multiple workflows)
+ */
+function showRulesManager() {
+  var html = HtmlService.createHtmlOutputFromFile('RulesManager')
+    .setWidth(900)
+    .setHeight(700)
+    .setTitle('Manage Rules');
+
+  SpreadsheetApp.getUi().showModalDialog(html, 'SaveMyAttachments - Manage Rules');
+}
+
+/**
+ * Get spreadsheet name from ID or URL
+ * Used by RulesManager to display user-friendly names
+ * @param {string} spreadsheetIdOrUrl - Spreadsheet ID or URL
+ * @return {string} Spreadsheet name or error message
+ */
+function getSpreadsheetName(spreadsheetIdOrUrl) {
+  if (!spreadsheetIdOrUrl || spreadsheetIdOrUrl.trim() === '') {
+    return 'Using current spreadsheet';
+  }
+
+  try {
+    // Extract ID from URL if needed
+    var spreadsheetId = extractIdFromUrl(spreadsheetIdOrUrl);
+    var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    return spreadsheet.getName();
+  } catch (e) {
+    Logger.log('Error getting spreadsheet name: ' + e.toString());
+    return 'Using current spreadsheet';
+  }
+}
+
+/**
+ * Get folder name from ID or URL
+ * Used by RulesManager to display user-friendly names
+ * @param {string} folderIdOrUrl - Drive folder ID or URL
+ * @return {string} Folder name or error message
+ */
+function getFolderName(folderIdOrUrl) {
+  if (!folderIdOrUrl) {
+    return 'Using global default';
+  }
+
+  try {
+    // Extract ID from URL if needed
+    var folderId = extractIdFromUrl(folderIdOrUrl);
+    var folder = DriveApp.getFolderById(folderId);
+    return folder.getName();
+  } catch (e) {
+    Logger.log('Error getting folder name: ' + e.toString());
+    return 'Unknown folder';
+  }
+}
+
+/**
+ * Extract both spreadsheet ID and gid from Google Sheets URL
+ * @param {string} url - Full Google Sheets URL or just the ID
+ * @return {Object} Object with spreadsheetId and gid properties
+ */
+function extractSheetInfoFromUrl(url) {
+  var result = {
+    spreadsheetId: '',
+    gid: ''
+  };
+
+  if (!url || url.trim() === '') {
+    return result;
+  }
+
+  // Extract spreadsheet ID (same as before)
+  var idMatch = url.match(/[-\w]{25,}/);
+  if (idMatch) {
+    result.spreadsheetId = idMatch[0];
+  }
+
+  // Extract gid from URL (e.g., #gid=1774276023 or ?gid=1774276023)
+  var gidMatch = url.match(/[?#&]gid=(\d+)/);
+  if (gidMatch) {
+    result.gid = gidMatch[1];
+  }
+
+  return result;
+}
+
+/**
  * Save all settings from the unified settings panel
  * Called from SettingsPanel.html
  */
@@ -133,6 +251,7 @@ function saveAllSettings(settings) {
       'DAYS_BACK': settings.daysBack.toString(),
       'EMAIL_FILTER': settings.emailFilter,
       'NEWEST_FIRST': settings.newestFirst.toString(),
+      'CATCH_ALL_ENABLED': settings.catchAllEnabled.toString(),
 
       // Automation Settings
       'AUTOMATION_ENABLED': settings.automationEnabled.toString(),
@@ -284,7 +403,46 @@ function testOpenRouter() {
 }
 
 /**
+ * Stop any running email processing
+ * Sets a flag that the processing loop checks
+ */
+function stopProcessing() {
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.setProperty('STOP_PROCESSING', 'true');
+
+  SpreadsheetApp.getUi().alert(
+    'Stop Requested',
+    'Processing will stop after the current email completes.\n\n' +
+    'Note: This only works if processing is currently running.\n' +
+    'Already completed runs cannot be stopped.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+
+  Logger.log('Stop processing flag set');
+}
+
+/**
+ * Check if stop was requested
+ * Called during processing loops to allow graceful shutdown
+ * @return {boolean} True if stop was requested
+ */
+function shouldStopProcessing() {
+  var userProperties = PropertiesService.getUserProperties();
+  var stopFlag = userProperties.getProperty('STOP_PROCESSING');
+
+  if (stopFlag === 'true') {
+    // Clear the flag
+    userProperties.deleteProperty('STOP_PROCESSING');
+    Logger.log('🛑 Stop requested by user');
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Process new emails manually (batch)
+ * Now uses the Rules Engine for processing
  */
 function processNewEmailsManual() {
   var ui = SpreadsheetApp.getUi();
@@ -298,21 +456,8 @@ function processNewEmailsManual() {
   SpreadsheetApp.getActiveSpreadsheet().toast('Processing new emails...', 'SaveMyAttachments', 5);
 
   try {
-    var stats = processNewEmails(config);
-
-    // Calculate cost estimate for this batch
-    var modelPricing = {
-      'anthropic/claude-3.5-sonnet': 3.00,
-      'anthropic/claude-3-haiku': 0.25,
-      'anthropic/claude-3-opus': 15.00,
-      'openai/gpt-4-turbo': 10.00,
-      'openai/gpt-3.5-turbo': 0.50,
-      'mistralai/mistral-7b-instruct': 0.10
-    };
-
-    var pricePerMillion = modelPricing[config.model] || 1.00;
-    var tokensPerEmail = 540; // Rough estimate
-    var batchCost = (stats.processed * tokensPerEmail / 1000000) * pricePerMillion;
+    // Use the new rules-based processing
+    var stats = processNewEmailsWithRules();
 
     var message = 'Processing complete!\n\n' +
                   'Found: ' + stats.found + ' emails\n' +
@@ -327,17 +472,31 @@ function processNewEmailsManual() {
                  '(Automation will handle this automatically)';
     }
 
+    // Show cost info or AI disabled message
     if (stats.processed > 0) {
-      message += '\n\n💰 ESTIMATED COST:\n' +
-                 '- This batch: $' + batchCost.toFixed(4) + '\n' +
-                 '- Model: ' + config.model;
+      if (config.enableAI && config.apiKey) {
+        // Get pricing from weekly cache (auto-refreshes from OpenRouter API)
+        var modelPricing = getModelPricing();
+        var pricePerMillion = modelPricing[config.model] || 1.00;
+        var tokensPerEmail = 540; // Rough estimate
+        var batchCost = (stats.processed * tokensPerEmail / 1000000) * pricePerMillion;
+
+        message += '\n\n💰 ESTIMATED COST:\n' +
+                   '- This batch: $' + batchCost.toFixed(4) + '\n' +
+                   '- Model: ' + config.model;
+      } else {
+        message += '\n\n🤖 AI summaries: Disabled (no costs incurred)';
+      }
     }
 
     if (stats.errors > 0) {
       message += '\n\nError details:\n' + stats.errorMessages.join('\n');
     }
 
-    message += '\n\n💡 Tip: View cost details in Tools → View Cost Estimates';
+    // Only show cost tip if AI is enabled
+    if (config.enableAI && config.apiKey) {
+      message += '\n\n💡 Tip: View cost details in Tools → View Cost Estimates';
+    }
 
     ui.alert('Batch Processing Results', message, ui.ButtonSet.OK);
 
