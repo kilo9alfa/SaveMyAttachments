@@ -110,13 +110,7 @@ function extractIdFromUrl(url) {
 }
 
 /**
- * Create a new folder in Drive (for future use)
- *
- * @param {string} parentFolderId - Parent folder ID
- * @param {string} folderName - Name of new folder
- * @return {Folder} Created folder object
+ * Note: Folder creation removed to comply with drive.file scope requirements.
+ * Users select folders via Google Picker instead of dynamic folder creation.
+ * See PickerHelper.gs for folder selection implementation.
  */
-function createFolder(parentFolderId, folderName) {
-  var parentFolder = DriveApp.getFolderById(parentFolderId);
-  return parentFolder.createFolder(folderName);
-}

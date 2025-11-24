@@ -94,6 +94,11 @@ function onOpen() {
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addItem('📋 Manage Rules', 'showRulesManager')
     .addSeparator()
+    // Google Picker - Select Files
+    .addSubMenu(ui.createMenu('📁 Select Drive Folder/Spreadsheet')
+      .addItem('📂 Select Drive Folder', 'showFolderPicker')
+      .addItem('📊 Select Spreadsheet', 'showSpreadsheetPicker'))
+    .addSeparator()
     // Tools
     .addSubMenu(ui.createMenu('🔧 Tools')
       .addItem('🧪 Process Most Recent Email (Test)', 'processTestEmail')

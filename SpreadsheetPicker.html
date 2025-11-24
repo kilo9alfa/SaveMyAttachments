@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script type="text/javascript">
+    var developerKey = 'YOUR_DEVELOPER_KEY'; // Not required for Drive Picker when using OAuth
+    var pickerApiLoaded = false;
+    var oauthToken;
+
+    // Load the Google Picker API
+    function loadPicker() {
+      gapi.load('picker', {'callback': onPickerApiLoad});
+    }
+
+    function onPickerApiLoad() {
+      pickerApiLoaded = true;
+      google.script.run.withSuccessHandler(createPicker).getOAuthToken();
+    }
+
+    function createPicker(token) {
+      if (pickerApiLoaded && token) {
+        oauthToken = token;
+
+        // Create view for Google Sheets only
+        var view = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS)
+            .setMode(google.picker.DocsViewMode.LIST);
+
+        var picker = new google.picker.PickerBuilder()
+            .enableFeature(google.picker.Feature.NAV_HIDDEN)
+            .setOAuthToken(token)
+            .setCallback(pickerCallback)
+            .setOrigin(window.location.protocol + '//' + window.location.host)
+            .setTitle('Select Spreadsheet')
+            .addView(view)
+            .build();
+        picker.setVisible(true);
+      }
+    }
+
+    function pickerCallback(data) {
+      if (data.action == google.picker.Action.PICKED) {
+        var spreadsheet = data.docs[0];
+        var spreadsheetId = spreadsheet.id;
+        var spreadsheetName = spreadsheet.name;
+
+        // Save the spreadsheet ID to PropertiesService
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              alert(result.message);
+              google.script.host.close();
+            } else {
+              alert('Error: ' + result.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            alert('Error saving spreadsheet: ' + error.message);
+          })
+          .saveSpreadsheetId(spreadsheetId, spreadsheetName);
+      } else if (data.action == google.picker.Action.CANCEL) {
+        google.script.host.close();
+      }
+    }
+
+    // Auto-load picker when page loads
+    window.onload = loadPicker;
+  </script>
+  <script src="https://apis.google.com/js/api.js"></script>
+</head>
+<body>
+  <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+    <p>Loading Google Spreadsheet Picker...</p>
+    <p style="color: #666; font-size: 12px;">Please wait while we initialize the spreadsheet selector.</p>
+  </div>
+</body>
+</html>
