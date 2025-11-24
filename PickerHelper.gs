@@ -1,40 +1,106 @@
 /**
- * Google Picker Helper
- * Handles folder and spreadsheet selection via Google Picker API
+ * Folder and Spreadsheet Selection Helper
+ * Simple URL-based selection (no Google Picker - avoids iframe/cookie issues)
  */
 
 /**
- * Get OAuth token for Google Picker
- * @return {string} OAuth token
- */
-function getOAuthToken() {
-  return ScriptApp.getOAuthToken();
-}
-
-/**
- * Show folder picker dialog
- * Opens Google Picker to let user select a Drive folder
+ * Show folder selection prompt
+ * User pastes Drive folder URL
  */
 function showFolderPicker() {
-  var html = HtmlService.createHtmlOutputFromFile('FolderPicker')
-    .setWidth(600)
-    .setHeight(425)
-    .setTitle('Select Drive Folder');
+  var ui = SpreadsheetApp.getUi();
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Select Drive Folder');
+  var response = ui.prompt(
+    'Select Drive Folder',
+    'Paste the URL of the Google Drive folder where you want to save files:\n\n' +
+    'Example: https://drive.google.com/drive/folders/ABC123xyz\n\n' +
+    'Or just paste the folder ID (ABC123xyz)',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var input = response.getResponseText().trim();
+
+    if (!input) {
+      ui.alert('Error', 'Please provide a folder URL or ID', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Extract ID from URL or use as-is
+    var folderId = extractIdFromUrl(input);
+
+    // Try to access the folder to verify permissions
+    try {
+      var folder = DriveApp.getFolderById(folderId);
+      var folderName = folder.getName();
+
+      var result = saveFolderId(folderId, folderName);
+
+      if (result.success) {
+        ui.alert('Success', result.message, ui.ButtonSet.OK);
+      } else {
+        ui.alert('Error', result.message, ui.ButtonSet.OK);
+      }
+    } catch (e) {
+      ui.alert('Error',
+        'Cannot access that folder. Make sure:\n' +
+        '1. The folder exists\n' +
+        '2. You have permission to access it\n' +
+        '3. The URL/ID is correct\n\n' +
+        'Error: ' + e.message,
+        ui.ButtonSet.OK);
+    }
+  }
 }
 
 /**
- * Show spreadsheet picker dialog
- * Opens Google Picker to let user select a Google Sheet
+ * Show spreadsheet selection prompt
+ * User pastes Google Sheets URL
  */
 function showSpreadsheetPicker() {
-  var html = HtmlService.createHtmlOutputFromFile('SpreadsheetPicker')
-    .setWidth(600)
-    .setHeight(425)
-    .setTitle('Select Spreadsheet');
+  var ui = SpreadsheetApp.getUi();
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Select Spreadsheet');
+  var response = ui.prompt(
+    'Select Spreadsheet',
+    'Paste the URL of the Google Sheet where you want to log emails:\n\n' +
+    'Example: https://docs.google.com/spreadsheets/d/ABC123xyz/edit\n\n' +
+    'Or just paste the spreadsheet ID (ABC123xyz)',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() === ui.Button.OK) {
+    var input = response.getResponseText().trim();
+
+    if (!input) {
+      ui.alert('Error', 'Please provide a spreadsheet URL or ID', ui.ButtonSet.OK);
+      return;
+    }
+
+    // Extract ID from URL or use as-is
+    var spreadsheetId = extractIdFromUrl(input);
+
+    // Try to access the spreadsheet to verify permissions
+    try {
+      var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+      var spreadsheetName = spreadsheet.getName();
+
+      var result = saveSpreadsheetId(spreadsheetId, spreadsheetName);
+
+      if (result.success) {
+        ui.alert('Success', result.message, ui.ButtonSet.OK);
+      } else {
+        ui.alert('Error', result.message, ui.ButtonSet.OK);
+      }
+    } catch (e) {
+      ui.alert('Error',
+        'Cannot access that spreadsheet. Make sure:\n' +
+        '1. The spreadsheet exists\n' +
+        '2. You have permission to access it\n' +
+        '3. The URL/ID is correct\n\n' +
+        'Error: ' + e.message,
+        ui.ButtonSet.OK);
+    }
+  }
 }
 
 /**
