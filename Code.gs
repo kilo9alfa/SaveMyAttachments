@@ -122,10 +122,8 @@ function onOpen() {
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addItem('📋 Manage Rules', 'showRulesManager')
     .addSeparator()
-    // Google Picker - Select Files
-    .addSubMenu(ui.createMenu('📁 Select Drive Folder/Spreadsheet')
-      .addItem('📂 Select Drive Folder', 'showFolderPicker')
-      .addItem('📊 Select Spreadsheet', 'showSpreadsheetPicker'))
+    // Google Picker - Select Drive Folder
+    .addItem('📂 Select Drive Folder', 'showFolderPicker')
     .addSeparator()
     // Tools
     .addSubMenu(ui.createMenu('🔧 Tools')

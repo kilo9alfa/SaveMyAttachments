@@ -7,14 +7,15 @@
 
 ## ✅ Completed
 
-1. ✅ Implement Google Picker for Drive folder selection
-2. ✅ Implement Google Picker for Spreadsheet selection
+1. ✅ Implement Google Picker for Drive folder selection (replaced with URL input due to cookie issues)
+2. ✅ ~~Implement Google Picker for Spreadsheet selection~~ **REMOVED** - not needed for container-bound scripts
 3. ✅ Change OAuth scope from `drive` to `drive.file` (saves $15k-$75k CASA assessment)
 4. ✅ Remove spreadsheets scope (using Picker instead)
 5. ✅ Remove dynamic folder creation logic (not compatible with drive.file)
 6. ✅ Push all changes to Apps Script
 7. ✅ Create container-bound test script with clasp
 8. ✅ Reorganize documentation (move 38 old files to old_docs/)
+9. ✅ Remove spreadsheet picker functionality (container-bound scripts write to current spreadsheet)
 
 ---
 
@@ -29,9 +30,9 @@
 **Test Checklist:**
 - [ ] Open spreadsheet and verify "SaveMyAttachments" menu appears
 - [ ] Authorize OAuth permissions
-- [ ] Test folder picker (SaveMyAttachments → Select Drive Folder)
-- [ ] Test spreadsheet picker (SaveMyAttachments → Select Spreadsheet)
-- [ ] Verify selections are saved
+- [ ] Test folder selection (SaveMyAttachments → Select Drive Folder)
+- [ ] Verify folder selection is saved
+- [ ] Confirm emails write to current spreadsheet (no spreadsheet picker needed)
 - [ ] Test with testingsavemyattachments@gmail.com (share spreadsheet)
 - [ ] Test with support@thecoralblock.com
 
@@ -63,11 +64,10 @@
 **Key Scenes to Show:**
 1. OAuth consent screen (drive.file, gmail.readonly, script.external_request)
 2. Opening spreadsheet with SaveMyAttachments menu
-3. Using Google Picker to select Drive folder
-4. Using Google Picker to select spreadsheet
-5. Processing an email and saving to selected folder
-6. Showing data in selected spreadsheet
-7. Confirming data segregation (user's OpenRouter key)
+3. Using folder selection to choose Drive folder (paste URL)
+4. Processing an email and saving to selected folder
+5. Showing data written to current spreadsheet (no spreadsheet selection needed)
+6. Confirming data segregation (user's OpenRouter key)
 
 ### 5. Send Updated Response to Google OAuth Team
 **Reference:** `2025.11.24.GoogleEmail.md` (original email from Google)
@@ -77,8 +77,9 @@
 - ✅ DeepSeek models blocked (3-layer protection)
 - ✅ Scope mismatch fixed (manifest updated)
 - ✅ **NEW:** Changed from drive to drive.file scope
-- ✅ **NEW:** Implemented Google Picker for folder/sheet selection
+- ✅ **NEW:** Implemented folder selection (URL-based, complies with drive.file)
 - ✅ **NEW:** No more dynamic folder creation
+- ✅ **NEW:** Container-bound scripts write to current spreadsheet only
 - Include new demo video link
 
 ---
@@ -102,15 +103,16 @@
 
 **For Testing Phase:**
 - [ ] Menu appears and works in container-bound script
-- [ ] Google Picker opens and allows folder selection
-- [ ] Google Picker opens and allows spreadsheet selection
-- [ ] Selections are saved to PropertiesService
+- [ ] Folder selection prompt works (URL input)
+- [ ] Folder selection is saved to PropertiesService
+- [ ] Emails write to current spreadsheet correctly
 - [ ] Works for both support@ and testingsavemyattachments@ accounts
 
 **For OAuth Approval:**
-- [ ] Demo video shows complete workflow with Picker
+- [ ] Demo video shows complete workflow with folder selection
 - [ ] Response addresses all 3 Google concerns
 - [ ] Explanation of drive.file scope change is clear
+- [ ] Explanation of URL-based folder selection (complies with drive.file)
 - [ ] Data segregation architecture is demonstrated
 - [ ] DeepSeek blocking is visible in demo
 

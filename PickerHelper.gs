@@ -1,6 +1,9 @@
 /**
- * Folder and Spreadsheet Selection Helper
+ * Folder Selection Helper
  * Simple URL-based selection (no Google Picker - avoids iframe/cookie issues)
+ *
+ * NOTE: Spreadsheet selection is NOT needed for container-bound scripts.
+ * Container-bound scripts write to the current spreadsheet automatically.
  */
 
 /**
@@ -53,55 +56,8 @@ function showFolderPicker() {
   }
 }
 
-/**
- * Show spreadsheet selection prompt
- * User pastes Google Sheets URL
- */
-function showSpreadsheetPicker() {
-  var ui = SpreadsheetApp.getUi();
-
-  var response = ui.prompt(
-    'Select Spreadsheet',
-    'Paste the URL of the Google Sheet where you want to log emails:\n\n' +
-    'Example: https://docs.google.com/spreadsheets/d/ABC123xyz/edit\n\n' +
-    'Or just paste the spreadsheet ID (ABC123xyz)',
-    ui.ButtonSet.OK_CANCEL
-  );
-
-  if (response.getSelectedButton() === ui.Button.OK) {
-    var input = response.getResponseText().trim();
-
-    if (!input) {
-      ui.alert('Error', 'Please provide a spreadsheet URL or ID', ui.ButtonSet.OK);
-      return;
-    }
-
-    // Extract ID from URL or use as-is
-    var spreadsheetId = extractIdFromUrl(input);
-
-    // Try to access the spreadsheet to verify permissions
-    try {
-      var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-      var spreadsheetName = spreadsheet.getName();
-
-      var result = saveSpreadsheetId(spreadsheetId, spreadsheetName);
-
-      if (result.success) {
-        ui.alert('Success', result.message, ui.ButtonSet.OK);
-      } else {
-        ui.alert('Error', result.message, ui.ButtonSet.OK);
-      }
-    } catch (e) {
-      ui.alert('Error',
-        'Cannot access that spreadsheet. Make sure:\n' +
-        '1. The spreadsheet exists\n' +
-        '2. You have permission to access it\n' +
-        '3. The URL/ID is correct\n\n' +
-        'Error: ' + e.message,
-        ui.ButtonSet.OK);
-    }
-  }
-}
+// Spreadsheet selection removed - not needed for container-bound scripts
+// Container-bound scripts automatically write to the current spreadsheet
 
 /**
  * Save selected folder ID from Picker
@@ -131,46 +87,10 @@ function saveFolderId(folderId, folderName) {
 }
 
 /**
- * Save selected spreadsheet ID from Picker
- * @param {string} spreadsheetId - The selected spreadsheet ID
- * @param {string} spreadsheetName - The selected spreadsheet name
- * @return {Object} Success status
- */
-function saveSpreadsheetId(spreadsheetId, spreadsheetName) {
-  try {
-    var userProperties = PropertiesService.getUserProperties();
-    userProperties.setProperty('SHEET_ID', spreadsheetId);
-    userProperties.setProperty('SHEET_NAME', spreadsheetName);
-
-    Logger.log('✅ Saved spreadsheet: ' + spreadsheetName + ' (ID: ' + spreadsheetId + ')');
-
-    return {
-      success: true,
-      message: 'Spreadsheet selected: ' + spreadsheetName
-    };
-  } catch (e) {
-    Logger.log('❌ Error saving spreadsheet: ' + e);
-    return {
-      success: false,
-      message: 'Error: ' + e.message
-    };
-  }
-}
-
-/**
  * Get currently selected folder name
  * @return {string} Folder name or "Not selected"
  */
 function getSelectedFolderName() {
   var userProperties = PropertiesService.getUserProperties();
   return userProperties.getProperty('DRIVE_FOLDER_NAME') || 'Not selected';
-}
-
-/**
- * Get currently selected spreadsheet name
- * @return {string} Spreadsheet name or "Not selected"
- */
-function getSelectedSpreadsheetName() {
-  var userProperties = PropertiesService.getUserProperties();
-  return userProperties.getProperty('SHEET_NAME') || 'Not selected';
 }
