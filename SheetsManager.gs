@@ -106,19 +106,11 @@ function addToSheet(data, sheetId, sheetGid) {
  * @return {boolean} True if email is already in sheet
  */
 function isEmailInSheet(messageId, sheetId) {
-  // Get sheet: use sheetId if provided (for rules), otherwise use current sheet
-  var sheet;
-  if (sheetId) {
-    try {
-      var spreadsheet = SpreadsheetApp.openById(sheetId);
-      sheet = spreadsheet.getActiveSheet();
-    } catch (e) {
-      Logger.log('Error opening sheet ' + sheetId + ' in isEmailInSheet: ' + e.toString());
-      return false; // If can't open sheet, assume email not in it
-    }
-  } else {
-    sheet = getCurrentSheet();
-  }
+  // For container-bound scripts, ALWAYS use current spreadsheet
+  // Ignore sheetId parameter (used for standalone/add-on mode only)
+  var sheet = getCurrentSheet();
+
+  Logger.log('Checking if email exists in current spreadsheet (container-bound mode)');
 
   // If no data yet, return false
   if (sheet.getLastRow() <= 1) {
