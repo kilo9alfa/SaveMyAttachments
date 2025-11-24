@@ -268,16 +268,16 @@
       <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label>Drive Folder Selection</label>
-        <div style="background: #e8f0fe; padding: 15px; border-radius: 4px; border-left: 4px solid #1a73e8;">
-          <div style="font-weight: 500; margin-bottom: 8px; color: #1967d2;">📂 Select your Drive folder from the menu</div>
-          <div class="help-text" style="margin: 0;">
-            Go to <strong>SaveMyAttachments → Select Drive Folder</strong> in the menu above, then paste your Drive folder URL in the dialog.
-          </div>
-          <div id="currentFolderDisplay" style="margin-top: 10px; padding: 8px; background: white; border-radius: 3px; font-family: monospace; font-size: 12px; color: #666;">
+        <label>Drive Folder Selection *</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" class="btn-secondary" onclick="selectDriveFolder()" style="flex-shrink: 0; padding: 10px 16px;">
+            📂 Select Drive Folder
+          </button>
+          <div id="currentFolderDisplay" style="flex: 1; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; color: #666;">
             No folder selected yet
           </div>
         </div>
+        <div class="help-text">Click the button to select where SaveMyAttachments will save your files. Paste your Drive folder URL in the dialog.</div>
       </div>
     </div>
 
@@ -695,7 +695,24 @@
       }
     }
 
-    // Folder selection is done via menu (showFolderPicker), not here
+    // Select Drive Folder button handler
+    function selectDriveFolder() {
+      // Close the settings dialog
+      google.script.host.close();
+
+      // Call the showFolderPicker function from PickerHelper.gs
+      // Note: This will show a native prompt dialog, not within this panel
+      google.script.run
+        .withSuccessHandler(function() {
+          // Folder selected successfully
+          // The user will need to reopen settings to see the updated folder
+          showSuccess('Folder selected! Reopen settings to see the update.');
+        })
+        .withFailureHandler(function(error) {
+          showError('Error selecting folder: ' + error.message);
+        })
+        .showFolderPicker();
+    }
   </script>
 </body>
 </html>

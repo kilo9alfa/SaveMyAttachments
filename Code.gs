@@ -122,9 +122,6 @@ function onOpen() {
     .addItem('⚙️ Configure Settings', 'showSettings')
     .addItem('📋 Manage Rules', 'showRulesManager')
     .addSeparator()
-    // Google Picker - Select Drive Folder
-    .addItem('📂 Select Drive Folder', 'showFolderPicker')
-    .addSeparator()
     // Tools
     .addSubMenu(ui.createMenu('🔧 Tools')
       .addItem('🧪 Process Most Recent Email (Test)', 'processTestEmail')
