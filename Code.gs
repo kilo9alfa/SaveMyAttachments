@@ -81,6 +81,34 @@ function createTestEnvironment() {
 }
 
 /**
+ * Runs when add-on is opened from Sheets (add-on homepage)
+ * Required for Workspace Add-on
+ */
+function onHomepage(e) {
+  return createWelcomeCard();
+}
+
+/**
+ * Create welcome card for add-on homepage
+ * @return {Card} Card builder for add-on UI
+ */
+function createWelcomeCard() {
+  var card = CardService.newCardBuilder();
+
+  var section = CardService.newCardSection()
+    .setHeader('SaveMyAttachments')
+    .addWidget(CardService.newTextParagraph()
+      .setText('Automatically save Gmail attachments to Drive with AI summaries.'))
+    .addWidget(CardService.newTextButton()
+      .setText('Configure Settings')
+      .setOnClickAction(CardService.newAction()
+        .setFunctionName('showSettings')));
+
+  card.addSection(section);
+  return card.build();
+}
+
+/**
  * Creates custom menu when the add-on is installed or document is opened
  */
 function onOpen() {

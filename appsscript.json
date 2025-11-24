@@ -9,8 +9,33 @@
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/script.external_request"
   ],
-  "webapp": {
-    "access": "MYSELF",
-    "executeAs": "USER_DEPLOYING"
+  "sheets": {
+    "macros": [],
+    "customFunctions": []
+  },
+  "addOns": {
+    "common": {
+      "name": "SaveMyAttachments",
+      "logoUrl": "https://thecoralblock.com/images/savemyattachments-logo.png",
+      "layoutProperties": {
+        "primaryColor": "#4285f4",
+        "secondaryColor": "#34a853"
+      },
+      "homepageTrigger": {
+        "runFunction": "onHomepage"
+      },
+      "useLocaleFromApp": true
+    },
+    "sheets": {
+      "onHomepageTrigger": {
+        "runFunction": "onHomepage"
+      },
+      "addMenus": [
+        {
+          "text": "SaveMyAttachments",
+          "onOpen": "onOpen"
+        }
+      ]
+    }
   }
 }
