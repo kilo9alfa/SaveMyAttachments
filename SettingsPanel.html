@@ -268,14 +268,16 @@
       <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label for="folderId">Drive Folder *</label>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="folderId" placeholder="Paste folder URL or ID here" style="flex: 1;">
-          <button type="button" class="btn-secondary" onclick="createNewDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
-            📁 Create New Folder
-          </button>
+        <label>Drive Folder Selection</label>
+        <div style="background: #e8f0fe; padding: 15px; border-radius: 4px; border-left: 4px solid #1a73e8;">
+          <div style="font-weight: 500; margin-bottom: 8px; color: #1967d2;">📂 Select your Drive folder from the menu</div>
+          <div class="help-text" style="margin: 0;">
+            Go to <strong>SaveMyAttachments → Select Drive Folder</strong> in the menu above, then paste your Drive folder URL in the dialog.
+          </div>
+          <div id="currentFolderDisplay" style="margin-top: 10px; padding: 8px; background: white; border-radius: 3px; font-family: monospace; font-size: 12px; color: #666;">
+            No folder selected yet
+          </div>
         </div>
-        <div class="help-text">Right-click your Drive folder → Get link → Paste the entire URL here. Or click "Create New Folder" to automatically create one.</div>
       </div>
     </div>
 
@@ -501,7 +503,16 @@
     function loadConfig(config) {
       // API & Auth
       document.getElementById('apiKey').value = config.apiKey || '';
-      document.getElementById('folderId').value = config.folderId || '';
+
+      // Display current folder (read-only display, not input)
+      const folderDisplay = document.getElementById('currentFolderDisplay');
+      if (config.folderId) {
+        folderDisplay.textContent = '✅ Folder configured: ' + config.folderId.substring(0, 50) + '...';
+        folderDisplay.style.color = '#0d652d';
+      } else {
+        folderDisplay.textContent = '⚠️ No folder selected yet - use menu to select';
+        folderDisplay.style.color = '#c5221f';
+      }
 
       // What to Save
       document.getElementById('saveEmailBody').checked = config.saveEmailBody || false;
@@ -545,7 +556,6 @@
     function saveSettings() {
       // Validate required fields
       const apiKey = document.getElementById('apiKey').value.trim();
-      const folderId = document.getElementById('folderId').value.trim();
       const enableAI = document.getElementById('enableAI').checked;
 
       // API key is only required if AI is enabled
@@ -554,16 +564,14 @@
         return;
       }
 
-      if (!folderId) {
-        showError('Google Drive Folder is required');
-        return;
-      }
+      // Note: folderId is configured via menu, not in this panel
+      // Get it from config (already saved via showFolderPicker)
 
       // Collect all settings
       const settings = {
         // API & Auth
         apiKey: apiKey,
-        folderId: folderId,
+        // folderId is not set here - it's set via menu's showFolderPicker()
 
         // What to Save
         saveEmailBody: document.getElementById('saveEmailBody').checked,
@@ -687,34 +695,7 @@
       }
     }
 
-    // Create new Drive folder
-    function createNewDriveFolder() {
-      const button = event.target;
-
-      // Ask for folder name
-      const folderName = prompt('Enter folder name:', 'Save My Attachments');
-
-      if (!folderName) {
-        return; // User cancelled
-      }
-
-      button.disabled = true;
-      button.textContent = 'Creating...';
-
-      google.script.run
-        .withSuccessHandler(function(result) {
-          document.getElementById('folderId').value = result.folderUrl;
-          showSuccess('✅ Created folder: ' + result.folderName);
-          button.disabled = false;
-          button.textContent = '📁 Create New Folder';
-        })
-        .withFailureHandler(function(error) {
-          showError('Failed to create folder: ' + error.message);
-          button.disabled = false;
-          button.textContent = '📁 Create New Folder';
-        })
-        .createNewFolderForSettings(folderName.trim());
-    }
+    // Folder selection is done via menu (showFolderPicker), not here
   </script>
 </body>
 </html>
