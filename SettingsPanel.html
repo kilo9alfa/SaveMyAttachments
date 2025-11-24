@@ -268,14 +268,14 @@
       <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label for="folderUrlInput">Drive Folder URL *</label>
+        <label for="folderNameInput">Drive Folder Name *</label>
         <div style="display: flex; gap: 10px;">
-          <input type="text" id="folderUrlInput" placeholder="Paste your Drive folder URL here" style="flex: 1;">
-          <button type="button" class="btn-secondary" onclick="saveDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
-            💾 Save Folder
+          <input type="text" id="folderNameInput" placeholder="Enter folder name (e.g., 'SaveMyAttachments')" style="flex: 1;">
+          <button type="button" class="btn-secondary" onclick="createDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
+            📁 Create Folder
           </button>
         </div>
-        <div class="help-text">Right-click your Drive folder → Share → Copy link, then paste here. Example: https://drive.google.com/drive/folders/ABC123xyz</div>
+        <div class="help-text">Enter a name for your SaveMyAttachments folder. We'll create it in your Google Drive automatically.</div>
         <div id="folderSaveStatus" style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; display: none;"></div>
       </div>
     </div>
@@ -503,9 +503,6 @@
       // API & Auth
       document.getElementById('apiKey').value = config.apiKey || '';
 
-      // Load folder URL into input field
-      document.getElementById('folderUrlInput').value = config.folderId || '';
-
       // Show status if folder is already configured
       if (config.folderId) {
         const statusDiv = document.getElementById('folderSaveStatus');
@@ -513,7 +510,7 @@
         statusDiv.style.background = '#d4edda';
         statusDiv.style.color = '#155724';
         statusDiv.style.border = '1px solid #c3e6cb';
-        statusDiv.textContent = '✅ Folder configured';
+        statusDiv.textContent = '✅ Folder configured (ID: ' + config.folderId.substring(0, 20) + '...)';
       }
 
       // What to Save
@@ -697,17 +694,17 @@
       }
     }
 
-    // Save Drive Folder button handler
-    function saveDriveFolder() {
-      const folderUrl = document.getElementById('folderUrlInput').value.trim();
+    // Create Drive Folder button handler
+    function createDriveFolder() {
+      const folderName = document.getElementById('folderNameInput').value.trim();
       const statusDiv = document.getElementById('folderSaveStatus');
 
-      if (!folderUrl) {
+      if (!folderName) {
         statusDiv.style.display = 'block';
         statusDiv.style.background = '#f8d7da';
         statusDiv.style.color = '#721c24';
         statusDiv.style.border = '1px solid #f5c6cb';
-        statusDiv.textContent = '❌ Please enter a folder URL';
+        statusDiv.textContent = '❌ Please enter a folder name';
         return;
       }
 
@@ -716,16 +713,18 @@
       statusDiv.style.background = '#fff3cd';
       statusDiv.style.color = '#856404';
       statusDiv.style.border = '1px solid #ffeaa7';
-      statusDiv.textContent = '⏳ Verifying folder access...';
+      statusDiv.textContent = '⏳ Creating folder in your Drive...';
 
-      // Call server-side function to save and verify
+      // Call server-side function to create folder
       google.script.run
         .withSuccessHandler(function(result) {
           if (result.success) {
             statusDiv.style.background = '#d4edda';
             statusDiv.style.color = '#155724';
             statusDiv.style.border = '1px solid #c3e6cb';
-            statusDiv.textContent = '✅ Folder saved: ' + result.folderName;
+            statusDiv.textContent = '✅ Folder created: ' + result.folderName;
+            // Clear input after success
+            document.getElementById('folderNameInput').value = '';
           } else {
             statusDiv.style.background = '#f8d7da';
             statusDiv.style.color = '#721c24';
@@ -739,7 +738,7 @@
           statusDiv.style.border = '1px solid #f5c6cb';
           statusDiv.textContent = '❌ Error: ' + error.message;
         })
-        .saveFolderIdFromPanel(folderUrl);
+        .createNewFolderForSettings(folderName);
     }
   </script>
 </body>
