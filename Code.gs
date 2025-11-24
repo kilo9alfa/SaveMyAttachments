@@ -30,6 +30,57 @@ function testOAuthScopes() {
 }
 
 /**
+ * Create test spreadsheet and folder for demo video
+ * Run this to set up test environment with today's date
+ */
+function createTestEnvironment() {
+  try {
+    var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy.MM.dd');
+
+    // Create test spreadsheet
+    var spreadsheet = SpreadsheetApp.create('SaveMe Test Sheet - ' + today);
+    var sheet = spreadsheet.getActiveSheet();
+
+    // Add headers
+    sheet.appendRow(['Date', 'Sender', 'Subject', 'AI Summary', 'Attachments', 'Drive Links']);
+    sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+
+    // Auto-resize columns
+    sheet.autoResizeColumns(1, 6);
+
+    var spreadsheetUrl = spreadsheet.getUrl();
+    Logger.log('✅ Created test spreadsheet: ' + spreadsheetUrl);
+
+    // Create test Drive folder
+    var folder = DriveApp.createFolder('SaveMe Test Folder - ' + today);
+    var folderUrl = folder.getUrl();
+    Logger.log('✅ Created test folder: ' + folderUrl);
+
+    // Return URLs for easy access
+    var message = '✅ Test environment created!\n\n' +
+                  'Spreadsheet URL:\n' + spreadsheetUrl + '\n\n' +
+                  'Folder URL:\n' + folderUrl + '\n\n' +
+                  'Copy these URLs for use in the demo video settings.';
+
+    Logger.log(message);
+
+    // Also show in UI
+    var ui = SpreadsheetApp.getUi();
+    ui.alert('Test Environment Created', message, ui.ButtonSet.OK);
+
+    return {
+      spreadsheetUrl: spreadsheetUrl,
+      folderUrl: folderUrl
+    };
+
+  } catch (e) {
+    Logger.log('❌ Error creating test environment: ' + e.message);
+    throw e;
+  }
+}
+
+/**
  * Creates custom menu when the add-on is installed or document is opened
  */
 function onOpen() {

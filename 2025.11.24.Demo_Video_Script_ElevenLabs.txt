@@ -1,0 +1,25 @@
+This demonstration shows SaveMyAttachments and its data segregation architecture for Google OAuth verification.
+
+First, the OAuth authorization flow. When a user first opens SaveMyAttachments, they must grant permissions. The OAuth consent screen appears, showing exactly which scopes the application is requesting. The app requires four scopes: gmail.readonly to read emails, drive.file to save attachments and converted emails, spreadsheets to log email metadata, and script.external_request for optional AI features. The user must explicitly click "Allow" to grant these permissions. This ensures users are fully informed about what data the application can access. Without this consent, the application cannot access any Google data.
+
+After authorization is complete, this demonstration shows the default state. When a user first installs SaveMyAttachments, AI features are completely disabled. No email processing happens, and no data is sent to any AI service. This is visible in the settings panel where AI summarization is turned off by default.
+
+Next, the process of enabling the AI feature. The user opens the settings panel and checks the "Enable AI Summarization" box. The application immediately prompts for an OpenRouter API key. This is critical: the user must provide their own API key from their own OpenRouter account. The developer cannot see or access this key. It is stored securely in the user's Google Apps Script properties, which are encrypted by Google and isolated per user.
+
+An example API key is entered. This key authenticates API calls to the user's own OpenRouter account, not the developer's account. The user also selects which AI model to use. The dropdown only shows Claude, GPT-4, and Gemini models. DeepSeek models are completely filtered out and not available as options. This is the first layer of protection.
+
+The settings are now saved. This demonstration shows how email processing works. Clicking "Process Emails Now" manually triggers processing. The application reads emails from the user's Gmail inbox using the Gmail readonly scope. It extracts the email content, sender, subject, and any attachments.
+
+The application then saves the email and attachments to the user's Google Drive folder. This uses the drive.file scope, which only allows access to files the application creates. The application cannot see or access other files in the user's Drive.
+
+Next, the AI summarization process. The email content is sent directly from the user's Apps Script environment to the user's OpenRouter account, authenticated with the user's API key. The API response returns to the user's environment only. There is no intermediate storage on developer servers. Apps Script runs entirely in the user's Google Workspace, with no backend infrastructure controlled by the developer.
+
+The summary is now written to the user's Google Sheets along with the email metadata and Drive links. This uses the spreadsheets scope because users provide URLs to their existing spreadsheets. The application writes one row per email processed.
+
+This verifies the data segregation architecture. Each user's PropertiesService is isolated by Google. Each user's API key is separate. Each user's OpenRouter account is separate. There is no way for data to mix between users, and the developer has zero access to any user's email content or API keys.
+
+Finally, the DeepSeek blocking mechanism. If a user attempts to use a DeepSeek model by manually editing the model ID in the code, the system blocks it. Setting the model to "deepseek-chat" triggers the protection. When the generateSummary function runs, it immediately detects the DeepSeek model name and returns an error message: "Summary unavailable - DeepSeek models not supported". The API call is never made. This is the third layer of protection.
+
+In summary: AI is opt-in only. Users provide their own API keys. Data flows directly from the user's environment to the user's OpenRouter account. DeepSeek models are blocked at three levels: UI dropdown, API pricing filter, and runtime execution blocker. Complete data segregation is guaranteed by Google's Apps Script architecture.
+
+This concludes the demonstration of SaveMyAttachments. All code is in production and available for inspection.

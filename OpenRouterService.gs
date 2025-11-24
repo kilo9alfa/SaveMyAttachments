@@ -13,6 +13,12 @@
  * @return {string} AI-generated summary
  */
 function generateSummary(emailContent, apiKey, model, customPrompt) {
+  // Filter out DeepSeek models for Google OAuth compliance
+  if (model && model.toLowerCase().indexOf('deepseek') !== -1) {
+    Logger.log('⚠️ DeepSeek model blocked: ' + model);
+    return '[Summary unavailable - DeepSeek models not supported]';
+  }
+
   var url = 'https://openrouter.ai/api/v1/chat/completions';
 
   var prompt = customPrompt || 'Summarize this email in 5-10 words, focusing on the main action or topic:';
@@ -136,6 +142,12 @@ function getModelPricing() {
     var pricing = {};
 
     models.forEach(function(model) {
+      // Filter out DeepSeek models for Google OAuth compliance
+      if (model.id && model.id.toLowerCase().indexOf('deepseek') !== -1) {
+        Logger.log('Filtered out DeepSeek model: ' + model.id);
+        return; // Skip this model
+      }
+
       if (model.pricing && model.pricing.prompt) {
         // OpenRouter returns pricing in dollars per token, convert to per million tokens
         var pricePerToken = parseFloat(model.pricing.prompt);
