@@ -94,3 +94,29 @@ function getSelectedFolderName() {
   var userProperties = PropertiesService.getUserProperties();
   return userProperties.getProperty('DRIVE_FOLDER_NAME') || 'Not selected';
 }
+
+/**
+ * Save folder ID from Settings Panel
+ * Called from SettingsPanel.html when user clicks "Save Folder"
+ * @param {string} folderUrl - The folder URL or ID pasted by user
+ * @return {Object} Success status with folder name
+ */
+function saveFolderIdFromPanel(folderUrl) {
+  // Extract ID from URL or use as-is
+  var folderId = extractIdFromUrl(folderUrl);
+
+  // Try to access the folder to verify permissions
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    var folderName = folder.getName();
+
+    var result = saveFolderId(folderId, folderName);
+    return result;
+  } catch (e) {
+    Logger.log('Error accessing folder: ' + e.toString());
+    return {
+      success: false,
+      message: 'Cannot access folder. Check URL/ID and permissions.'
+    };
+  }
+}

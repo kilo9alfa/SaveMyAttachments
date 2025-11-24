@@ -268,16 +268,15 @@
       <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label>Drive Folder Selection *</label>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <button type="button" class="btn-secondary" onclick="selectDriveFolder()" style="flex-shrink: 0; padding: 10px 16px;">
-            📂 Select Drive Folder
+        <label for="folderUrlInput">Drive Folder URL *</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="folderUrlInput" placeholder="Paste your Drive folder URL here" style="flex: 1;">
+          <button type="button" class="btn-secondary" onclick="saveDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
+            💾 Save Folder
           </button>
-          <div id="currentFolderDisplay" style="flex: 1; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; color: #666;">
-            No folder selected yet
-          </div>
         </div>
-        <div class="help-text">Click the button to select where SaveMyAttachments will save your files. Paste your Drive folder URL in the dialog.</div>
+        <div class="help-text">Right-click your Drive folder → Share → Copy link, then paste here. Example: https://drive.google.com/drive/folders/ABC123xyz</div>
+        <div id="folderSaveStatus" style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; display: none;"></div>
       </div>
     </div>
 
@@ -504,14 +503,17 @@
       // API & Auth
       document.getElementById('apiKey').value = config.apiKey || '';
 
-      // Display current folder (read-only display, not input)
-      const folderDisplay = document.getElementById('currentFolderDisplay');
+      // Load folder URL into input field
+      document.getElementById('folderUrlInput').value = config.folderId || '';
+
+      // Show status if folder is already configured
       if (config.folderId) {
-        folderDisplay.textContent = '✅ Folder configured: ' + config.folderId.substring(0, 50) + '...';
-        folderDisplay.style.color = '#0d652d';
-      } else {
-        folderDisplay.textContent = '⚠️ No folder selected yet - use menu to select';
-        folderDisplay.style.color = '#c5221f';
+        const statusDiv = document.getElementById('folderSaveStatus');
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = '#d4edda';
+        statusDiv.style.color = '#155724';
+        statusDiv.style.border = '1px solid #c3e6cb';
+        statusDiv.textContent = '✅ Folder configured';
       }
 
       // What to Save
@@ -695,23 +697,49 @@
       }
     }
 
-    // Select Drive Folder button handler
-    function selectDriveFolder() {
-      // Close the settings dialog
-      google.script.host.close();
+    // Save Drive Folder button handler
+    function saveDriveFolder() {
+      const folderUrl = document.getElementById('folderUrlInput').value.trim();
+      const statusDiv = document.getElementById('folderSaveStatus');
 
-      // Call the showFolderPicker function from PickerHelper.gs
-      // Note: This will show a native prompt dialog, not within this panel
+      if (!folderUrl) {
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = '#f8d7da';
+        statusDiv.style.color = '#721c24';
+        statusDiv.style.border = '1px solid #f5c6cb';
+        statusDiv.textContent = '❌ Please enter a folder URL';
+        return;
+      }
+
+      // Show loading status
+      statusDiv.style.display = 'block';
+      statusDiv.style.background = '#fff3cd';
+      statusDiv.style.color = '#856404';
+      statusDiv.style.border = '1px solid #ffeaa7';
+      statusDiv.textContent = '⏳ Verifying folder access...';
+
+      // Call server-side function to save and verify
       google.script.run
-        .withSuccessHandler(function() {
-          // Folder selected successfully
-          // The user will need to reopen settings to see the updated folder
-          showSuccess('Folder selected! Reopen settings to see the update.');
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            statusDiv.style.background = '#d4edda';
+            statusDiv.style.color = '#155724';
+            statusDiv.style.border = '1px solid #c3e6cb';
+            statusDiv.textContent = '✅ Folder saved: ' + result.folderName;
+          } else {
+            statusDiv.style.background = '#f8d7da';
+            statusDiv.style.color = '#721c24';
+            statusDiv.style.border = '1px solid #f5c6cb';
+            statusDiv.textContent = '❌ ' + result.message;
+          }
         })
         .withFailureHandler(function(error) {
-          showError('Error selecting folder: ' + error.message);
+          statusDiv.style.background = '#f8d7da';
+          statusDiv.style.color = '#721c24';
+          statusDiv.style.border = '1px solid #f5c6cb';
+          statusDiv.textContent = '❌ Error: ' + error.message;
         })
-        .showFolderPicker();
+        .saveFolderIdFromPanel(folderUrl);
     }
   </script>
 </body>
