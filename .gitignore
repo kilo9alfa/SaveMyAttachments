@@ -2,6 +2,9 @@
 .clasp.json
 .clasp.json.*
 
+# Documentation (private)
+documentation/
+
 # macOS
 .DS_Store
 
