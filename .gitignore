@@ -1,0 +1,15 @@
+# Clasp configuration (contains project-specific IDs)
+.clasp.json
+.clasp.json.*
+
+# macOS
+.DS_Store
+
+# Video files (too large for git)
+*.mov
+*.mp4
+*.mp3
+
+# Backup files
+*.backup*
+*.old*

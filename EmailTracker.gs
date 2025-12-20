@@ -251,12 +251,20 @@ function nuclearClearEverything() {
   var allProps = props.getProperties();
   var deletedCount = 0;
   for (var key in allProps) {
-    // Keep RULES and essential config
-    if (key === 'RULES' || key === 'OPENROUTER_API_KEY' || key === 'DRIVE_FOLDER_ID' ||
+    // Keep RULES and essential config (but NOT folder - nuclear should reset folder too)
+    if (key === 'RULES' || key === 'OPENROUTER_API_KEY' ||
         key === 'MODEL' || key === 'DAYS_BACK' || key === 'BATCH_SIZE' ||
         key === 'ENABLE_AI' || key === 'SUMMARY_PROMPT' || key === 'SAVE_EMAIL_BODY' ||
         key === 'SAVE_ATTACHMENTS' || key === 'CATCH_ALL_ENABLED') {
       continue; // Skip - keep these
+    }
+
+    // Also delete folder config on nuclear clear
+    if (key === 'DRIVE_FOLDER_ID' || key === 'DRIVE_FOLDER_NAME') {
+      props.deleteProperty(key);
+      deletedCount++;
+      Logger.log('Deleted folder config: ' + key);
+      continue;
     }
 
     // Delete processing tracking properties

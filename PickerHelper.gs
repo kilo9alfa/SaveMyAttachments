@@ -1,122 +1,116 @@
 /**
- * Folder Selection Helper
- * Simple URL-based selection (no Google Picker - avoids iframe/cookie issues)
+ * Folder Management Helper
+ * Auto-creates dedicated SaveMyAttachments folder (compatible with drive.file scope)
  *
- * NOTE: Spreadsheet selection is NOT needed for container-bound scripts.
- * Container-bound scripts write to the current spreadsheet automatically.
+ * NOTE: Uses Advanced Drive Service (Drive API v2) instead of DriveApp
+ * because DriveApp.createFolder() requires full 'drive' scope,
+ * but Drive.Files.insert() works with 'drive.file' scope.
+ *
+ * APPROACH: Instead of using Google Picker (which has cookie/auth issues in Apps Script),
+ * we auto-create a dedicated folder. Since the app creates it, drive.file scope can access it.
  */
 
 /**
- * Show folder selection prompt
- * User pastes Drive folder URL
+ * Get or create the SaveMyAttachments folder using Advanced Drive Service
+ * @return {Object} Folder info with ID and name
  */
-function showFolderPicker() {
-  var ui = SpreadsheetApp.getUi();
+function getOrCreateSaveFolder() {
+  var userProperties = PropertiesService.getUserProperties();
+  var folderId = userProperties.getProperty('DRIVE_FOLDER_ID');
 
-  var response = ui.prompt(
-    'Select Drive Folder',
-    'Paste the URL of the Google Drive folder where you want to save files:\n\n' +
-    'Example: https://drive.google.com/drive/folders/ABC123xyz\n\n' +
-    'Or just paste the folder ID (ABC123xyz)',
-    ui.ButtonSet.OK_CANCEL
-  );
-
-  if (response.getSelectedButton() === ui.Button.OK) {
-    var input = response.getResponseText().trim();
-
-    if (!input) {
-      ui.alert('Error', 'Please provide a folder URL or ID', ui.ButtonSet.OK);
-      return;
-    }
-
-    // Extract ID from URL or use as-is
-    var folderId = extractIdFromUrl(input);
-
-    // Try to access the folder to verify permissions
+  // Check if we already have a valid folder
+  if (folderId) {
     try {
-      var folder = DriveApp.getFolderById(folderId);
-      var folderName = folder.getName();
-
-      var result = saveFolderId(folderId, folderName);
-
-      if (result.success) {
-        ui.alert('Success', result.message, ui.ButtonSet.OK);
-      } else {
-        ui.alert('Error', result.message, ui.ButtonSet.OK);
-      }
+      // Use Advanced Drive Service v2 to get folder info
+      var folder = Drive.Files.get(folderId);
+      return {
+        success: true,
+        folderId: folderId,
+        folderName: folder.title,
+        folderUrl: folder.alternateLink,
+        message: 'Using existing folder: ' + folder.title
+      };
     } catch (e) {
-      ui.alert('Error',
-        'Cannot access that folder. Make sure:\n' +
-        '1. The folder exists\n' +
-        '2. You have permission to access it\n' +
-        '3. The URL/ID is correct\n\n' +
-        'Error: ' + e.message,
-        ui.ButtonSet.OK);
+      // Folder no longer accessible, create new one
+      Logger.log('Existing folder not accessible, creating new one: ' + e);
     }
   }
-}
 
-// Spreadsheet selection removed - not needed for container-bound scripts
-// Container-bound scripts automatically write to the current spreadsheet
-
-/**
- * Save selected folder ID from Picker
- * @param {string} folderId - The selected folder ID
- * @param {string} folderName - The selected folder name
- * @return {Object} Success status
- */
-function saveFolderId(folderId, folderName) {
+  // Create new folder using Advanced Drive Service v2
   try {
-    var userProperties = PropertiesService.getUserProperties();
-    userProperties.setProperty('DRIVE_FOLDER_ID', folderId);
+    var folderName = 'SaveMyAttachments';
+
+    // Create folder metadata (v2 uses 'title' not 'name')
+    var folderMetadata = {
+      title: folderName,
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+
+    // Create the folder using Drive API v2
+    var folder = Drive.Files.insert(folderMetadata);
+
+    // Save folder info
+    userProperties.setProperty('DRIVE_FOLDER_ID', folder.id);
     userProperties.setProperty('DRIVE_FOLDER_NAME', folderName);
 
-    Logger.log('✅ Saved folder: ' + folderName + ' (ID: ' + folderId + ')');
+    Logger.log('Created new folder: ' + folderName + ' (ID: ' + folder.id + ')');
 
     return {
       success: true,
-      message: 'Folder selected: ' + folderName
+      folderId: folder.id,
+      folderName: folderName,
+      folderUrl: folder.alternateLink,
+      message: 'Created new folder: ' + folderName,
+      isNew: true
     };
   } catch (e) {
-    Logger.log('❌ Error saving folder: ' + e);
+    Logger.log('Error creating folder: ' + e);
     return {
       success: false,
-      message: 'Error: ' + e.message
+      message: 'Error creating folder: ' + e.message
     };
   }
 }
 
 /**
- * Get currently selected folder name
- * @return {string} Folder name or "Not selected"
+ * Get currently configured folder info using Advanced Drive Service
+ * @return {Object} Folder info or status
  */
-function getSelectedFolderName() {
+function getFolderInfo() {
   var userProperties = PropertiesService.getUserProperties();
-  return userProperties.getProperty('DRIVE_FOLDER_NAME') || 'Not selected';
+  var folderId = userProperties.getProperty('DRIVE_FOLDER_ID');
+
+  if (!folderId) {
+    return {
+      configured: false,
+      message: 'No folder configured yet'
+    };
+  }
+
+  try {
+    // Use Advanced Drive Service v2 to get folder info
+    var folder = Drive.Files.get(folderId);
+    return {
+      configured: true,
+      folderId: folderId,
+      folderName: folder.title,
+      folderUrl: folder.alternateLink
+    };
+  } catch (e) {
+    return {
+      configured: false,
+      message: 'Folder no longer accessible'
+    };
+  }
 }
 
 /**
- * Save folder ID from Settings Panel
- * Called from SettingsPanel.html when user clicks "Save Folder"
- * @param {string} folderUrl - The folder URL or ID pasted by user
- * @return {Object} Success status with folder name
+ * Reset folder configuration (for testing or if user wants to start over)
  */
-function saveFolderIdFromPanel(folderUrl) {
-  // Extract ID from URL or use as-is
-  var folderId = extractIdFromUrl(folderUrl);
-
-  // Try to access the folder to verify permissions
-  try {
-    var folder = DriveApp.getFolderById(folderId);
-    var folderName = folder.getName();
-
-    var result = saveFolderId(folderId, folderName);
-    return result;
-  } catch (e) {
-    Logger.log('Error accessing folder: ' + e.toString());
-    return {
-      success: false,
-      message: 'Cannot access folder. Check URL/ID and permissions.'
-    };
-  }
+function resetFolderConfig() {
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteProperty('DRIVE_FOLDER_ID');
+  userProperties.deleteProperty('DRIVE_FOLDER_NAME');
+  Logger.log('Folder configuration reset');
+  return { success: true, message: 'Folder configuration reset' };
 }

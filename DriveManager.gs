@@ -1,10 +1,15 @@
 /**
  * Google Drive Management
  * Handles file upload and folder organization
+ *
+ * NOTE: Uses Advanced Drive Service (Drive API v2) instead of DriveApp
+ * because DriveApp requires full 'drive' scope, but Drive API v2 works
+ * with 'drive.file' scope for files/folders created by this app.
  */
 
 /**
  * Save email attachments to Google Drive with file naming templates
+ * Uses Advanced Drive Service for drive.file scope compatibility
  *
  * @param {Array} attachments - Array of GmailAttachment objects
  * @param {Object} config - Configuration object (includes folderId and fileNamingTemplate)
@@ -16,10 +21,9 @@ function saveAttachmentsToDrive(attachments, config, message) {
   var folderId = (typeof config === 'string') ? config : config.folderId;
   var useTemplates = (typeof config === 'object') && config.fileNamingTemplate && message;
 
-  var folder;
-
+  // Verify folder exists using Advanced Drive Service v2
   try {
-    folder = DriveApp.getFolderById(folderId);
+    Drive.Files.get(folderId);
   } catch (e) {
     Logger.log('Error accessing Drive folder: ' + e.toString());
     throw new Error('Cannot access Drive folder. Please check the folder ID in settings.');
@@ -43,16 +47,22 @@ function saveAttachmentsToDrive(attachments, config, message) {
         Logger.log('Applied template, new name: ' + fileName);
       }
 
-      // Check for duplicate names and add timestamp if needed
-      var existingFiles = folder.getFilesByName(fileName);
-      if (existingFiles.hasNext()) {
+      // Check for duplicate names using Advanced Drive Service
+      var duplicateCheck = checkForDuplicateFile(folderId, fileName);
+      if (duplicateCheck) {
         fileName = addTimestampToFileName(fileName);
         Logger.log('Duplicate found, renamed to: ' + fileName);
       }
 
-      // Create the file in Drive
-      var file = folder.createFile(blob.setName(fileName));
-      var fileUrl = file.getUrl();
+      // Create the file using Advanced Drive Service v2
+      var fileMetadata = {
+        title: fileName,
+        parents: [{ id: folderId }]
+      };
+
+      var file = Drive.Files.insert(fileMetadata, blob);
+
+      var fileUrl = file.alternateLink;
       links.push(fileUrl);
       filesInfo.push({
         name: fileName,
@@ -76,6 +86,30 @@ function saveAttachmentsToDrive(attachments, config, message) {
     urls: links,
     files: filesInfo
   };
+}
+
+/**
+ * Check if a file with the given name exists in the folder
+ * Uses Advanced Drive Service - only finds files created by this app (drive.file scope)
+ *
+ * @param {string} folderId - Parent folder ID
+ * @param {string} fileName - File name to check
+ * @return {boolean} True if file exists
+ */
+function checkForDuplicateFile(folderId, fileName) {
+  try {
+    // Search for files with same name in the folder (v2 syntax)
+    var query = "title = '" + fileName.replace(/'/g, "\\'") + "' and '" + folderId + "' in parents and trashed = false";
+    var response = Drive.Files.list({
+      q: query,
+      maxResults: 1
+    });
+
+    return response.items && response.items.length > 0;
+  } catch (e) {
+    Logger.log('Error checking for duplicate: ' + e.toString());
+    return false; // Assume no duplicate if we can't check
+  }
 }
 
 /**
@@ -110,7 +144,7 @@ function extractIdFromUrl(url) {
 }
 
 /**
- * Note: Folder creation removed to comply with drive.file scope requirements.
- * Users select folders via Google Picker instead of dynamic folder creation.
- * See PickerHelper.gs for folder selection implementation.
+ * Note: This file uses Advanced Drive Service (Drive API v2) instead of DriveApp
+ * to comply with drive.file scope requirements. DriveApp methods like createFolder()
+ * and getFolderById() require full 'drive' scope.
  */

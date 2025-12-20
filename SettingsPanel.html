@@ -268,15 +268,14 @@
       <div class="section-title">📁 Google Drive</div>
 
       <div class="form-group">
-        <label for="folderNameInput">Drive Folder Name *</label>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="folderNameInput" placeholder="Enter folder name (e.g., 'SaveMyAttachments')" style="flex: 1;">
-          <button type="button" class="btn-secondary" onclick="createDriveFolder()" style="white-space: nowrap; padding: 10px 16px;">
-            📁 Create Folder
-          </button>
+        <label>Drive Folder</label>
+        <div id="folderInfo" style="padding: 12px; background: #f8f9fa; border-radius: 4px; margin-bottom: 10px;">
+          <div style="font-size: 13px; color: #666;">Loading folder info...</div>
         </div>
-        <div class="help-text">Enter a name for your SaveMyAttachments folder. We'll create it in your Google Drive automatically.</div>
-        <div id="folderSaveStatus" style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 12px; display: none;"></div>
+        <button type="button" class="btn-secondary" onclick="createOrShowFolder()" style="padding: 10px 16px; font-size: 14px;">
+          📂 Set Up Drive Folder
+        </button>
+        <div class="help-text">SaveMyAttachments will automatically create a dedicated folder in your Google Drive to save your files. You can move or rename this folder after creation.</div>
       </div>
     </div>
 
@@ -497,6 +496,9 @@
         .withSuccessHandler(loadConfig)
         .withFailureHandler(showError)
         .getConfig();
+
+      // Load folder info
+      loadFolderInfo();
     };
 
     function loadConfig(config) {
@@ -694,51 +696,92 @@
       }
     }
 
-    // Create Drive Folder button handler
-    function createDriveFolder() {
-      const folderName = document.getElementById('folderNameInput').value.trim();
-      const statusDiv = document.getElementById('folderSaveStatus');
-
-      if (!folderName) {
-        statusDiv.style.display = 'block';
-        statusDiv.style.background = '#f8d7da';
-        statusDiv.style.color = '#721c24';
-        statusDiv.style.border = '1px solid #f5c6cb';
-        statusDiv.textContent = '❌ Please enter a folder name';
-        return;
-      }
-
-      // Show loading status
-      statusDiv.style.display = 'block';
-      statusDiv.style.background = '#fff3cd';
-      statusDiv.style.color = '#856404';
-      statusDiv.style.border = '1px solid #ffeaa7';
-      statusDiv.textContent = '⏳ Creating folder in your Drive...';
-
-      // Call server-side function to create folder
+    // Load and display folder info
+    function loadFolderInfo() {
       google.script.run
         .withSuccessHandler(function(result) {
-          if (result.success) {
-            statusDiv.style.background = '#d4edda';
-            statusDiv.style.color = '#155724';
-            statusDiv.style.border = '1px solid #c3e6cb';
-            statusDiv.textContent = '✅ Folder created: ' + result.folderName;
-            // Clear input after success
-            document.getElementById('folderNameInput').value = '';
+          const folderInfoDiv = document.getElementById('folderInfo');
+          if (result.configured) {
+            folderInfoDiv.innerHTML = `
+              <div style="font-size: 13px;">
+                <div style="margin-bottom: 6px;">
+                  <strong>📁 ${result.folderName}</strong>
+                </div>
+                <a href="${result.folderUrl}" target="_blank" style="color: #1a73e8; text-decoration: none; font-size: 12px;">
+                  Open in Google Drive →
+                </a>
+              </div>
+            `;
           } else {
-            statusDiv.style.background = '#f8d7da';
-            statusDiv.style.color = '#721c24';
-            statusDiv.style.border = '1px solid #f5c6cb';
-            statusDiv.textContent = '❌ ' + result.message;
+            folderInfoDiv.innerHTML = `
+              <div style="font-size: 13px; color: #666;">
+                ℹ️ No folder configured yet. Click "Set Up Drive Folder" below to create one.
+              </div>
+            `;
           }
         })
         .withFailureHandler(function(error) {
-          statusDiv.style.background = '#f8d7da';
-          statusDiv.style.color = '#721c24';
-          statusDiv.style.border = '1px solid #f5c6cb';
-          statusDiv.textContent = '❌ Error: ' + error.message;
+          const folderInfoDiv = document.getElementById('folderInfo');
+          folderInfoDiv.innerHTML = `
+            <div style="font-size: 13px; color: #d32f2f;">
+              ❌ Error loading folder info: ${error.message}
+            </div>
+          `;
         })
-        .createNewFolderForSettings(folderName);
+        .getFolderInfo();
+    }
+
+    // Create or show the SaveMyAttachments folder
+    function createOrShowFolder() {
+      const folderInfoDiv = document.getElementById('folderInfo');
+      folderInfoDiv.innerHTML = '<div style="font-size: 13px; color: #666;">⏳ Setting up folder...</div>';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (result.success) {
+            if (result.isNew) {
+              folderInfoDiv.innerHTML = `
+                <div style="font-size: 13px; color: #2e7d32;">
+                  <div style="margin-bottom: 6px;">
+                    <strong>✅ Created folder: ${result.folderName}</strong>
+                  </div>
+                  <a href="${result.folderUrl}" target="_blank" style="color: #1a73e8; text-decoration: none; font-size: 12px;">
+                    Open in Google Drive →
+                  </a>
+                </div>
+              `;
+            } else {
+              folderInfoDiv.innerHTML = `
+                <div style="font-size: 13px;">
+                  <div style="margin-bottom: 6px;">
+                    <strong>📁 ${result.folderName}</strong>
+                  </div>
+                  <a href="${result.folderUrl}" target="_blank" style="color: #1a73e8; text-decoration: none; font-size: 12px;">
+                    Open in Google Drive →
+                  </a>
+                </div>
+              `;
+            }
+            // Show success message
+            showNotification('✅ Folder ready: ' + result.folderName, 'success');
+          } else {
+            folderInfoDiv.innerHTML = `
+              <div style="font-size: 13px; color: #d32f2f;">
+                ❌ ${result.message}
+              </div>
+            `;
+            showNotification('❌ ' + result.message, 'error');
+          }
+        })
+        .withFailureHandler(function(error) {
+          folderInfoDiv.innerHTML = `
+            <div style="font-size: 13px; color: #d32f2f;">
+              ❌ Error: ${error.message}
+            </div>
+          `;
+          showNotification('❌ Error: ' + error.message, 'error');
+        })
+        .getOrCreateSaveFolder();
     }
   </script>
 </body>

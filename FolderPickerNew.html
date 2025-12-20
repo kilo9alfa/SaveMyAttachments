@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <script type="text/javascript" src="https://apis.google.com/js/api.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    #picker-container {
+      margin-top: 20px;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .loading {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h2>Select Drive Folder</h2>
+  <div id="status" class="status loading">Loading Google Picker...</div>
+  <div id="picker-container"></div>
+
+  <script>
+    var developerKey = 'YOUR_API_KEY'; // Will be set by server
+    var accessToken = '';
+    var pickerApiLoaded = false;
+
+    // Load the Google Picker API
+    function onApiLoad() {
+      gapi.load('picker', {'callback': onPickerApiLoad});
+    }
+
+    function onPickerApiLoad() {
+      pickerApiLoaded = true;
+      // Get OAuth token from server
+      google.script.run
+        .withSuccessHandler(function(token) {
+          accessToken = token;
+          document.getElementById('status').textContent = 'Click below to select your folder';
+          document.getElementById('status').className = 'status';
+          createPicker();
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('status').textContent = 'Error: ' + error.message;
+          document.getElementById('status').className = 'status error';
+        })
+        .getOAuthToken();
+    }
+
+    // Create and render the Picker
+    function createPicker() {
+      if (pickerApiLoaded && accessToken) {
+        var view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+            .setSelectFolderEnabled(true);
+
+        var picker = new google.picker.PickerBuilder()
+            .setOAuthToken(accessToken)
+            .addView(view)
+            .setCallback(pickerCallback)
+            .build();
+        picker.setVisible(true);
+      }
+    }
+
+    // Picker callback
+    function pickerCallback(data) {
+      if (data[google.picker.Response.ACTION] == google.picker.Action.PICKED) {
+        var doc = data[google.picker.Response.DOCUMENTS][0];
+        var folderId = doc[google.picker.Document.ID];
+        var folderName = doc[google.picker.Document.NAME];
+
+        document.getElementById('status').textContent = 'Saving folder: ' + folderName + '...';
+        document.getElementById('status').className = 'status loading';
+
+        // Save folder to server
+        google.script.run
+          .withSuccessHandler(function(result) {
+            document.getElementById('status').textContent = '✅ Folder saved: ' + folderName;
+            document.getElementById('status').className = 'status success';
+            setTimeout(function() {
+              google.script.host.close();
+            }, 2000);
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById('status').textContent = 'Error saving: ' + error.message;
+            document.getElementById('status').className = 'status error';
+          })
+          .saveFolderId(folderId, folderName);
+      } else if (data[google.picker.Response.ACTION] == google.picker.Action.CANCEL) {
+        google.script.host.close();
+      }
+    }
+
+    // Initialize
+    onApiLoad();
+  </script>
+</body>
+</html>

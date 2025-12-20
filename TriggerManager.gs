@@ -63,10 +63,7 @@ function runScheduledProcessing() {
     Logger.log('- Skipped: ' + stats.skipped);
     Logger.log('- Errors: ' + stats.errors);
 
-    // Send notification email if there were errors (optional)
-    if (stats.errors > 0 && config.notifyOnErrors === 'true') {
-      sendErrorNotification(stats);
-    }
+    // Note: Email notifications removed to avoid gmail.send scope requirement
 
   } catch (e) {
     Logger.log('Error in scheduled processing: ' + e.toString());
@@ -124,35 +121,8 @@ function getAutomationStatus() {
   };
 }
 
-/**
- * Send error notification email
- *
- * @param {Object} stats - Processing statistics
- */
-function sendErrorNotification(stats) {
-  try {
-    var userEmail = Session.getActiveUser().getEmail();
-
-    var subject = 'SaveMe: Processing Errors (' + stats.errors + ' errors)';
-
-    var body = 'SaveMe encountered errors during scheduled processing:\n\n';
-    body += 'Processed: ' + stats.processed + '\n';
-    body += 'Errors: ' + stats.errors + '\n\n';
-    body += 'Error details:\n';
-
-    stats.errorMessages.forEach(function(msg) {
-      body += '- ' + msg + '\n';
-    });
-
-    body += '\n\nPlease check your Google Apps Script logs for more details.';
-
-    GmailApp.sendEmail(userEmail, subject, body);
-    Logger.log('Sent error notification to: ' + userEmail);
-
-  } catch (e) {
-    Logger.log('Failed to send error notification: ' + e.toString());
-  }
-}
+// Note: sendErrorNotification() removed to avoid gmail.send scope requirement
+// Errors are logged to the sheet and Apps Script logs instead
 
 /**
  * Log scheduled processing errors

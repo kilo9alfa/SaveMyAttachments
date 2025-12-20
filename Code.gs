@@ -6,25 +6,38 @@
 /**
  * Simple test function to verify OAuth scopes work
  * Run this from the Apps Script editor to test permissions
+ * Note: Uses Advanced Drive Service for drive.file scope compatibility
  */
 function testOAuthScopes() {
   try {
-    // Test Gmail access
+    // Test Gmail access (gmail.readonly)
     var threads = GmailApp.search('in:inbox', 0, 1);
-    Logger.log('✅ Gmail access works - Found ' + threads.length + ' thread(s)');
+    Logger.log('Gmail access works - Found ' + threads.length + ' thread(s)');
 
-    // Test Drive access
-    var folders = DriveApp.getFolders();
-    Logger.log('✅ Drive access works');
+    // Test Drive access (drive.file) using Advanced Drive Service v2
+    var folderMetadata = {
+      title: 'SaveMyAttachments_Test_' + new Date().getTime(),
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+    var testFolder = Drive.Files.insert(folderMetadata);
+    Logger.log('Drive access works - Created test folder: ' + testFolder.title);
 
-    // Test external request (will test OpenRouter later)
-    Logger.log('✅ External request scope present');
+    // Clean up - trash the test folder
+    Drive.Files.trash(testFolder.id);
+    Logger.log('Test folder cleaned up');
+
+    // Test Spreadsheet access (spreadsheets.currentonly)
+    var sheet = SpreadsheetApp.getActiveSpreadsheet();
+    Logger.log('Spreadsheet access works - ' + sheet.getName());
+
+    // Test external request scope
+    Logger.log('External request scope present');
 
     Logger.log('SUCCESS! All OAuth scopes are working correctly.');
     return 'OAuth test passed!';
 
   } catch (e) {
-    Logger.log('❌ Error: ' + e.message);
+    Logger.log('Error: ' + e.message);
     throw e;
   }
 }
@@ -32,16 +45,19 @@ function testOAuthScopes() {
 /**
  * Create test spreadsheet and folder for demo video
  * Run this to set up test environment with today's date
+ * Note: Uses Advanced Drive Service for drive.file scope compatibility
  */
 function createTestEnvironment() {
   try {
     var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy.MM.dd');
 
-    // Create test spreadsheet
-    var spreadsheet = SpreadsheetApp.create('SaveMe Test Sheet - ' + today);
+    // Note: SpreadsheetApp.create() requires full spreadsheets scope
+    // With spreadsheets.currentonly, we can only use the bound spreadsheet
+    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadsheet.getActiveSheet();
 
     // Add headers
+    sheet.clear();
     sheet.appendRow(['Date', 'Sender', 'Subject', 'AI Summary', 'Attachments', 'Drive Links']);
     sheet.getRange(1, 1, 1, 6).setFontWeight('bold');
     sheet.setFrozenRows(1);
@@ -50,12 +66,16 @@ function createTestEnvironment() {
     sheet.autoResizeColumns(1, 6);
 
     var spreadsheetUrl = spreadsheet.getUrl();
-    Logger.log('✅ Created test spreadsheet: ' + spreadsheetUrl);
+    Logger.log('Using current spreadsheet: ' + spreadsheetUrl);
 
-    // Create test Drive folder
-    var folder = DriveApp.createFolder('SaveMe Test Folder - ' + today);
-    var folderUrl = folder.getUrl();
-    Logger.log('✅ Created test folder: ' + folderUrl);
+    // Create test Drive folder using Advanced Drive Service v2
+    var folderMetadata = {
+      title: 'SaveMe Test Folder - ' + today,
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+    var folder = Drive.Files.insert(folderMetadata);
+    var folderUrl = folder.alternateLink;
+    Logger.log('Created test folder: ' + folderUrl);
 
     // Return URLs for easy access
     var message = '✅ Test environment created!\n\n' +
@@ -134,9 +154,8 @@ function onOpen() {
       .addSeparator()
       .addItem('Test OpenRouter Connection', 'testOpenRouter')
       .addSeparator()
-      .addItem('Clear Processed Tracking Only', 'clearProcessedUI')
-      .addItem('Clear Everything & Start Fresh', 'clearEverythingUI')
-      .addItem('🔥 Nuclear Clear (Force Reset)', 'nuclearClearUI'))
+      .addItem('Clear Email Tracking', 'clearProcessedUI')
+      .addItem('🔥 Nuclear: Start Fresh', 'nuclearClearUI'))
     .addToUi();
 }
 
@@ -232,6 +251,7 @@ function getSpreadsheetName(spreadsheetIdOrUrl) {
 /**
  * Get folder name from ID or URL
  * Used by RulesManager to display user-friendly names
+ * Uses Advanced Drive Service for drive.file scope compatibility
  * @param {string} folderIdOrUrl - Drive folder ID or URL
  * @return {string} Folder name or error message
  */
@@ -243,8 +263,8 @@ function getFolderName(folderIdOrUrl) {
   try {
     // Extract ID from URL if needed
     var folderId = extractIdFromUrl(folderIdOrUrl);
-    var folder = DriveApp.getFolderById(folderId);
-    return folder.getName();
+    var folder = Drive.Files.get(folderId);
+    return folder.title;
   } catch (e) {
     Logger.log('Error getting folder name: ' + e.toString());
     return 'Unknown folder';
@@ -289,20 +309,12 @@ function saveAllSettings(settings) {
   try {
     var userProperties = PropertiesService.getUserProperties();
 
-    // Extract folder ID from URL if needed
-    var folderId = extractIdFromUrl(settings.folderId);
+    // Note: Folder is configured separately via getOrCreateSaveFolder()
+    // We don't need to validate it here - just save the other settings
 
-    // Test folder access
-    try {
-      DriveApp.getFolderById(folderId);
-    } catch (e) {
-      throw new Error('Cannot access Drive folder. Please check the folder ID/URL.');
-    }
-
-    // Save all settings
+    // Save all settings (folder ID is NOT overwritten here)
     userProperties.setProperties({
       'OPENROUTER_API_KEY': settings.apiKey,
-      'DRIVE_FOLDER_ID': folderId,
 
       // What to Save
       'SAVE_EMAIL_BODY': settings.saveEmailBody.toString(),
@@ -354,45 +366,31 @@ function saveAllSettings(settings) {
 }
 
 /**
- * Create a new SaveMe folder in Drive and configure it
- */
-/**
  * Create new folder for settings panel
  * Returns folder ID and name (no UI alerts)
+ * Uses Advanced Drive Service for drive.file scope compatibility
  *
- * @param {string} baseName - Base folder name (defaults to "SaveMe Attachments")
+ * @param {string} baseName - Base folder name (defaults to "SaveMyAttachments")
  */
 function createNewFolderForSettings(baseName) {
   try {
-    baseName = baseName || 'Save My Attachments';
-    var finalName = baseName;
+    baseName = baseName || 'SaveMyAttachments';
+    var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss');
+    var finalName = baseName + '_' + timestamp;
 
-    // Check if base name exists
-    if (folderExists(baseName)) {
-      // Try adding date
-      var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-      finalName = baseName + ' ' + timestamp;
+    // Create the folder using Advanced Drive Service v2 (drive.file scope compatible)
+    var folderMetadata = {
+      title: finalName,
+      mimeType: 'application/vnd.google-apps.folder'
+    };
+    var folder = Drive.Files.insert(folderMetadata);
 
-      // If date version exists, try adding -1, -2, etc.
-      if (folderExists(finalName)) {
-        var counter = 1;
-        while (folderExists(finalName + '-' + counter) && counter < 100) {
-          counter++;
-        }
-        finalName = finalName + '-' + counter;
-      }
-    }
-
-    // Create the folder
-    var folder = DriveApp.createFolder(finalName);
-    var folderId = folder.getId();
-
-    Logger.log('Created new folder: ' + finalName + ' (ID: ' + folderId + ')');
+    Logger.log('Created new folder: ' + finalName + ' (ID: ' + folder.id + ')');
 
     return {
-      folderId: folderId,
+      folderId: folder.id,
       folderName: finalName,
-      folderUrl: folder.getUrl()
+      folderUrl: folder.alternateLink
     };
 
   } catch (e) {
@@ -401,20 +399,13 @@ function createNewFolderForSettings(baseName) {
   }
 }
 
-/**
- * Check if a folder with the given name exists in Drive (root level)
- *
- * @param {string} folderName - Folder name to check
- * @return {boolean} True if folder exists
- */
-function folderExists(folderName) {
-  var folders = DriveApp.getFoldersByName(folderName);
-  return folders.hasNext();
-}
+// Note: folderExists() removed - it required drive scope (getFoldersByName)
+// We now use timestamps to ensure unique folder names
 
 /**
  * Create new folder (legacy function for menu)
  * Shows UI alerts
+ * Uses Advanced Drive Service for drive.file scope compatibility
  */
 function createNewFolder() {
   var ui = SpreadsheetApp.getUi();
@@ -428,9 +419,13 @@ function createNewFolder() {
 
   if (response == ui.Button.YES) {
     try {
-      var folder = DriveApp.createFolder('Save My Attachments');
-      var folderId = folder.getId();
-      var folderUrl = folder.getUrl();
+      var folderMetadata = {
+        title: 'Save My Attachments',
+        mimeType: 'application/vnd.google-apps.folder'
+      };
+      var folder = Drive.Files.insert(folderMetadata);
+      var folderId = folder.id;
+      var folderUrl = folder.alternateLink;
 
       saveConfig('DRIVE_FOLDER_ID', folderId);
 
@@ -865,11 +860,9 @@ function clearProcessedUI() {
   var ui = SpreadsheetApp.getUi();
 
   var response = ui.alert(
-    'Clear Processed Tracking Only',
-    'This will clear the tracking list only.\n\n' +
-    'Note: Emails already in the Sheet will NOT be reprocessed\n' +
-    '(to protect your edits).\n\n' +
-    'To fully start fresh, use "Clear Everything & Start Fresh".\n\n' +
+    'Clear Email Tracking',
+    'This will clear the list of processed emails.\n\n' +
+    'All emails will be processed again on the next run.\n\n' +
     'Continue?',
     ui.ButtonSet.YES_NO
   );
@@ -877,8 +870,8 @@ function clearProcessedUI() {
   if (response === ui.Button.YES) {
     clearProcessedEmails();
     ui.alert('Cleared',
-      'Processed email tracking has been cleared.\n\n' +
-      'Emails in the Sheet will still be skipped (to protect edits).',
+      'Email tracking has been cleared.\n\n' +
+      'All emails will be processed again on the next run.',
       ui.ButtonSet.OK);
   }
 }
@@ -959,23 +952,20 @@ function nuclearClearUI() {
   var ui = SpreadsheetApp.getUi();
 
   var response = ui.alert(
-    '🔥 Nuclear Clear (Force Reset)',
-    '⚠️ EXTREME WARNING:\n\n' +
-    'This will:\n' +
-    '1. Delete ALL rows in the sheet\n' +
-    '2. Flush ENTIRE user cache (all keys)\n' +
-    '3. Delete ALL SaveMe properties\n\n' +
-    'Use this ONLY if regular clear is not working.\n\n' +
-    'This is the most aggressive reset possible.\n\n' +
+    '🔥 Nuclear: Start Fresh',
+    '⚠️ WARNING: This will reset everything:\n\n' +
+    '• Delete all rows in the sheet\n' +
+    '• Clear email tracking\n' +
+    '• Reset Drive folder configuration\n\n' +
+    'Your API key and rules will be preserved.\n\n' +
     'Continue?',
     ui.ButtonSet.YES_NO
   );
 
   if (response === ui.Button.YES) {
     var confirm = ui.alert(
-      'Final Confirmation',
-      'Are you ABSOLUTELY SURE?\n\n' +
-      'This will force-reset everything.',
+      'Confirm Reset',
+      'Are you sure you want to start fresh?',
       ui.ButtonSet.YES_NO
     );
 
@@ -1010,20 +1000,14 @@ function nuclearClearUI() {
         Logger.log('=== NUCLEAR CLEAR COMPLETE ===');
         Logger.log('AFTER: Sheet rows: ' + rowsAfter + ', Tracked emails: ' + processedAfter.length + ', Cache keys: ' + cacheKeysAfter.length);
 
-        var message = '✅ Nuclear Clear Complete!\n\n';
-        message += 'BEFORE:\n';
-        message += '  Sheet rows: ' + rowsBefore + '\n';
-        message += '  Tracked emails: ' + processedBefore.length + '\n';
-        message += '  Cache keys: ' + cacheKeysBefore.length + '\n\n';
-        message += 'AFTER:\n';
-        message += '  Sheet rows: ' + rowsAfter + '\n';
-        message += '  Tracked emails: ' + processedAfter.length + '\n';
-        message += '  Cache keys: ' + cacheKeysAfter.length + '\n';
-        message += '  Properties deleted: ' + deletedProps + '\n\n';
-        message += 'Everything has been force-reset.\n\n';
-        message += 'Try processing emails now.';
+        var message = '✅ Reset Complete!\n\n';
+        message += '• Sheet cleared (' + rowsBefore + ' rows removed)\n';
+        message += '• Email tracking cleared\n';
+        message += '• Drive folder reset\n\n';
+        message += 'Go to Settings to set up your Drive folder,\n';
+        message += 'then process emails to start fresh.';
 
-        ui.alert('Nuclear Clear Complete', message, ui.ButtonSet.OK);
+        ui.alert('Start Fresh Complete', message, ui.ButtonSet.OK);
 
       } catch (e) {
         Logger.log('Error during nuclear clear: ' + e.toString());

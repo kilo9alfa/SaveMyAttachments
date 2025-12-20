@@ -703,17 +703,20 @@ function processEmail(message, config) {
           var fileName = applyEmailNamingTemplate(config.emailNamingTemplate, message, blob.getName().split('.').pop());
           blob.setName(fileName);
 
-          // Save to Drive
-          var folder = DriveApp.getFolderById(config.folderId);
-          var file = folder.createFile(blob);
+          // Save to Drive using Advanced Drive Service v2 (drive.file scope compatible)
+          var fileMetadata = {
+            title: fileName,
+            parents: [{ id: config.folderId }]
+          };
+          var file = Drive.Files.insert(fileMetadata, blob);
 
           allSavedFiles.push({
-            name: file.getName(),
-            url: file.getUrl(),
+            name: file.title,
+            url: file.alternateLink,
             type: 'email'
           });
 
-          Logger.log('  ✅ Saved email body: ' + file.getName());
+          Logger.log('  Saved email body: ' + file.title);
         }
       } catch (e) {
         Logger.log('  ⚠️ Error saving email body: ' + e.toString());

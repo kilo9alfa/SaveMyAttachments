@@ -40,7 +40,7 @@ function convertEmail(message, format) {
 
 /**
  * Convert email to PDF format
- * Uses Google Drive's PDF conversion capability
+ * Uses Advanced Drive Service for drive.file scope compatibility
  *
  * @param {GmailMessage} message - Gmail message object
  * @return {Blob} PDF blob
@@ -50,23 +50,28 @@ function convertEmailToPDF(message) {
     // Build HTML representation
     var html = buildEmailHTML(message);
 
-    // Create a temporary Google Doc from HTML
-    var tempDoc = DriveApp.createFile(
-      'temp_email_' + message.getId(),
-      html,
-      MimeType.HTML
-    );
+    // Create a temporary file from HTML using Advanced Drive Service v2
+    var tempFileName = 'temp_email_' + message.getId() + '.html';
+    var htmlBlob = Utilities.newBlob(html, MimeType.HTML, tempFileName);
 
-    // Convert to PDF
-    var pdfBlob = tempDoc.getAs(MimeType.PDF);
+    var fileMetadata = {
+      title: tempFileName
+    };
+
+    // Create temp HTML file
+    var tempFile = Drive.Files.insert(fileMetadata, htmlBlob);
+
+    // Get the file and convert to PDF
+    // Note: Since we created the file, drive.file scope can access it
+    var pdfBlob = DriveApp.getFileById(tempFile.id).getAs(MimeType.PDF);
 
     // Clean up temp file
-    tempDoc.setTrashed(true);
+    Drive.Files.trash(tempFile.id);
 
     // Set proper filename (will be applied by calling function)
     pdfBlob.setName('email.pdf');
 
-    Logger.log('✅ Converted email to PDF');
+    Logger.log('Converted email to PDF');
     return pdfBlob;
 
   } catch (e) {

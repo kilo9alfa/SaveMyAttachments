@@ -57,7 +57,12 @@ function exportLogsToDrive() {
     throw new Error('Drive folder not configured. Please set up Drive folder in settings first.');
   }
 
-  var folder = DriveApp.getFolderById(config.folderId);
+  // Verify folder exists using Advanced Drive Service v2
+  try {
+    Drive.Files.get(config.folderId);
+  } catch (e) {
+    throw new Error('Cannot access Drive folder. Please check folder settings.');
+  }
 
   // Get current timestamp
   var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss');
@@ -114,13 +119,18 @@ function exportLogsToDrive() {
   logContent += 'END OF LOG FILE\n';
   logContent += '='.repeat(80) + '\n';
 
-  // Create file in Drive
-  var file = folder.createFile(fileName, logContent, MimeType.PLAIN_TEXT);
+  // Create file in Drive using Advanced Drive Service v2
+  var fileMetadata = {
+    title: fileName,
+    parents: [{ id: config.folderId }]
+  };
+  var blob = Utilities.newBlob(logContent, MimeType.PLAIN_TEXT, fileName);
+  var file = Drive.Files.insert(fileMetadata, blob);
 
-  // Make it shareable (anyone with link can view)
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  // Note: setSharing removed - requires full drive scope
+  // Files created by app are accessible to the user automatically
 
-  var url = file.getUrl();
+  var url = file.alternateLink;
 
   Logger.log('Logs exported to: ' + url);
 
